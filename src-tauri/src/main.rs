@@ -31,8 +31,8 @@ async fn main() {
     // Generate Tauri context once
     let context = tauri::generate_context!();
     
-    // Initialize database (using in-memory for now due to SQLite file issues)
-    let db = Database::new(":memory:").await.expect("Failed to initialize database");
+    // Initialize database in current directory for now
+    let db = Database::new("./mocify.db").await.expect("Failed to initialize database");
     
     // Initialize app state
     let app_state = AppState {
