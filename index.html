@@ -111,17 +111,17 @@
                             return newRoute;
                         case "start_server":
                             console.log("Starting server for collection:", args.collection_id);
-                            const collection = mockStorage.collections.find(c => c.id === args.collection_id);
-                            if (!collection) {
+                            const targetCollection = mockStorage.collections.find(c => c.id === args.collection_id);
+                            if (!targetCollection) {
                                 throw new Error("Collection not found");
                             }
                             mockStorage.runningServers.add(args.collection_id);
                             return {
-                                port: collection.port,
-                                collection_id: collection.id,
-                                collection_name: collection.name,
+                                port: targetCollection.port,
+                                collection_id: targetCollection.id,
+                                collection_name: targetCollection.name,
                                 is_running: true,
-                                base_url: `http://localhost:${collection.port}`
+                                base_url: `http://localhost:${targetCollection.port}`
                             };
                         case "stop_server":
                             console.log("Stopping server on port:", args.port);
@@ -132,10 +132,15 @@
                             return undefined;
                         case "test_route":
                             console.log("Testing route:", args.route_id);
+                            const route = mockStorage.routes.find(r => r.id === args.route_id);
+                            const routeCollection = route ? mockStorage.collections.find(c => c.id === route.collection_id) : null;
                             return { 
-                                success: true, 
-                                status_code: 200, 
-                                response_time_ms: Math.floor(Math.random() * 100) + 10 
+                                url: `http://localhost:${routeCollection?.port || 3000}${route?.path || '/'}`,
+                                method: route?.method || "GET",
+                                status_code: route?.status_code || 200, 
+                                response_time_ms: Math.floor(Math.random() * 100) + 10,
+                                body: route?.response_body || JSON.stringify({ message: "Test successful", data: { id: 1, name: "Test User" } }, null, 2),
+                                headers: route?.response_headers || { "Content-Type": "application/json", "X-Test-Result": "success" }
                             };
                         default:
                             return { success: true };
@@ -182,6 +187,12 @@
             };
             console.log("Using tauri:", tauri);
             console.log("Final invoke function:", realInvoke ? 'real' : 'mock');
+            
+            // Make invoke function available globally for debugging
+            window.debugTauri = {
+                isReal: !!realInvoke,
+                invoke: tauri.invoke
+            };
 
             function App() {
                 console.log("App component rendering");
@@ -192,6 +203,9 @@
                 const [servers, setServers] = useState([]);
                 const [showNewCollection, setShowNewCollection] = useState(false);
                 const [showNewRoute, setShowNewRoute] = useState(false);
+                const [testResults, setTestResults] = useState([]);
+                const [expandedResults, setExpandedResults] = useState({});
+                const [showTestResults, setShowTestResults] = useState(true);
 
                 useEffect(() => {
                     console.log("App useEffect running");
@@ -231,7 +245,9 @@
 
                 const loadServers = async () => {
                     try {
+                        console.log("Loading servers...");
                         const data = await tauri.invoke("get_running_servers");
+                        console.log("Server data:", data);
                         setServers(data);
                     } catch (error) {
                         console.error("Failed to load servers:", error);
@@ -287,14 +303,58 @@
                 };
 
                 const testRoute = async (routeId) => {
+                    console.log("Starting test for route:", routeId);
+                    console.log("Selected route:", selectedRoute);
+                    
                     try {
+                        console.log("Calling tauri.invoke with test_route");
                         const result = await tauri.invoke("test_route", {
                             request: {
                                 route_id: routeId,
                             }
                         });
+                        console.log("Test route result:", result);
+                        const testResult = {
+                            id: Date.now(),
+                            routeId: routeId,
+                            routeName: selectedRoute?.name || 'Unknown Route',
+                            method: result.method || selectedRoute?.method || 'GET',
+                            path: selectedRoute?.path || '/',
+                            url: result.url,
+                            timestamp: new Date().toISOString(),
+                            success: true,
+                            status_code: result.status_code,
+                            response_time_ms: result.response_time_ms,
+                            response_body: result.body,
+                            response_headers: result.headers,
+                            error: null
+                        };
+                        setTestResults(prev => [testResult, ...prev]);
                         console.log("Test successful! Status:", result.status_code, "Response Time:", result.response_time_ms + "ms");
+                        console.log("Test result object:", testResult);
                     } catch (error) {
+                        console.error("Test route failed with error:", error);
+                        console.error("Error details:", {
+                            message: error.message,
+                            stack: error.stack,
+                            routeId: routeId,
+                            selectedRoute: selectedRoute
+                        });
+                        const testResult = {
+                            id: Date.now(),
+                            routeId: routeId,
+                            routeName: selectedRoute?.name || 'Unknown Route',
+                            method: selectedRoute?.method || 'GET',
+                            path: selectedRoute?.path || '/',
+                            timestamp: new Date().toISOString(),
+                            success: false,
+                            status_code: null,
+                            response_time_ms: null,
+                            response_body: null,
+                            response_headers: null,
+                            error: error.message || 'Test failed'
+                        };
+                        setTestResults(prev => [testResult, ...prev]);
                         console.error("Test failed:", error);
                     }
                 };
@@ -453,6 +513,121 @@
                                     selectedRoute.response_body && React.createElement('div', null,
                                         React.createElement('label', { className: 'block text-sm font-medium text-gray-400 mb-2' }, 'Response Body'),
                                         React.createElement('pre', { className: 'bg-gray-800 p-3 rounded overflow-x-auto text-sm' }, selectedRoute.response_body)
+                                    ),
+                                    React.createElement('div', null,
+                                        React.createElement('div', { 
+                                            className: 'flex items-center justify-between mb-2 cursor-pointer',
+                                            onClick: () => setShowTestResults(!showTestResults)
+                                        },
+                                            React.createElement('label', { className: 'text-sm font-medium text-gray-400' }, 'Test Results'),
+                                            React.createElement('i', { 
+                                                className: `fas fa-chevron-${showTestResults ? 'down' : 'right'} text-xs text-gray-400`
+                                            })
+                                        ),
+                                        showTestResults && React.createElement('div', { className: 'bg-gray-800 rounded max-h-80 overflow-y-auto' },
+                                            testResults.filter(result => result.routeId === selectedRoute.id).length > 0 ?
+                                                testResults.filter(result => result.routeId === selectedRoute.id).map(result =>
+                                                    React.createElement('div', {
+                                                        key: result.id,
+                                                        className: `border-b border-gray-700 last:border-b-0 ${result.success ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500'}`
+                                                    },
+                                                        React.createElement('div', { 
+                                                            className: 'p-3 cursor-pointer hover:bg-gray-750',
+                                                            onClick: () => setExpandedResults(prev => ({
+                                                                ...prev,
+                                                                [result.id]: !prev[result.id]
+                                                            }))
+                                                        },
+                                                            React.createElement('div', { className: 'flex items-center justify-between' },
+                                                                React.createElement('div', { className: 'flex items-center space-x-2' },
+                                                                    React.createElement('span', {
+                                                                        className: `inline-block w-2 h-2 rounded-full ${result.success ? 'bg-green-500' : 'bg-red-500'}`
+                                                                    }),
+                                                                    React.createElement('span', { className: 'text-xs text-gray-400' }, 
+                                                                        new Date(result.timestamp).toLocaleTimeString()
+                                                                    ),
+                                                                    React.createElement('span', { className: 'text-xs text-gray-500 ml-2' }, 
+                                                                        result.success ? 'Success' : 'Failed'
+                                                                    ),
+                                                                    React.createElement('i', { 
+                                                                        className: `fas fa-chevron-${expandedResults[result.id] ? 'down' : 'right'} text-xs text-gray-500 ml-2`
+                                                                    })
+                                                                ),
+                                                                React.createElement('div', { className: 'flex items-center space-x-3' },
+                                                                    result.status_code && React.createElement('span', { 
+                                                                        className: `text-xs font-bold ${
+                                                                            result.status_code >= 200 && result.status_code < 300 ? 'text-green-400' :
+                                                                            result.status_code >= 400 ? 'text-red-400' : 'text-yellow-400'
+                                                                        }`
+                                                                    }, result.status_code),
+                                                                    result.response_time_ms && React.createElement('span', { className: 'text-xs text-gray-400' }, 
+                                                                        result.response_time_ms + 'ms'
+                                                                    )
+                                                                )
+                                                            ),
+                                                            result.error && React.createElement('div', { className: 'text-xs text-red-400' }, result.error)
+                                                        ),
+                                                        expandedResults[result.id] && React.createElement('div', { className: 'px-3 pb-3 border-t border-gray-700' },
+                                                            React.createElement('div', { className: 'space-y-3 mt-3' },
+                                                                React.createElement('div', null,
+                                                                    React.createElement('div', { className: 'text-xs font-medium text-gray-400 mb-1' }, 'Request'),
+                                                                    React.createElement('div', { className: 'bg-gray-900 p-2 rounded text-xs font-mono' },
+                                                                        React.createElement('div', null,
+                                                                            React.createElement('span', { 
+                                                                                className: `font-bold ${
+                                                                                    result.method === 'GET' ? 'text-green-400' :
+                                                                                    result.method === 'POST' ? 'text-blue-400' :
+                                                                                    result.method === 'PUT' ? 'text-yellow-400' :
+                                                                                    result.method === 'DELETE' ? 'text-red-400' : 'text-gray-400'
+                                                                                }`
+                                                                            }, result.method + ' '),
+                                                                            React.createElement('span', { className: 'text-blue-300' }, result.url || (result.path || '/'))
+                                                                        )
+                                                                    )
+                                                                ),
+                                                                result.success && React.createElement('div', null,
+                                                                    React.createElement('div', { className: 'text-xs font-medium text-gray-400 mb-1' }, 'Response Headers'),
+                                                                    React.createElement('div', { className: 'bg-gray-900 p-2 rounded text-xs font-mono' },
+                                                                        result.response_headers ? Object.entries(result.response_headers).map(([key, value]) =>
+                                                                            React.createElement('div', { key: key },
+                                                                                React.createElement('span', { className: 'text-blue-400' }, key + ': '),
+                                                                                React.createElement('span', { className: 'text-gray-300' }, value)
+                                                                            )
+                                                                        ) : React.createElement('span', { className: 'text-gray-500' }, 'No headers')
+                                                                    )
+                                                                ),
+                                                                result.success && result.response_body && React.createElement('div', null,
+                                                                    React.createElement('div', { className: 'text-xs font-medium text-gray-400 mb-1' }, 'Response Body'),
+                                                                    React.createElement('pre', { className: 'bg-gray-900 p-2 rounded text-xs overflow-x-auto' }, 
+                                                                        result.response_body
+                                                                    )
+                                                                ),
+                                                                result.success && React.createElement('div', null,
+                                                                    React.createElement('div', { className: 'text-xs font-medium text-gray-400 mb-1' }, 'Performance'),
+                                                                    React.createElement('div', { className: 'bg-gray-900 p-2 rounded text-xs' },
+                                                                        React.createElement('div', { className: 'flex justify-between' },
+                                                                            React.createElement('span', { className: 'text-gray-400' }, 'Status Code:'),
+                                                                            React.createElement('span', { 
+                                                                                className: `font-bold ${
+                                                                                    result.status_code >= 200 && result.status_code < 300 ? 'text-green-400' :
+                                                                                    result.status_code >= 400 ? 'text-red-400' : 'text-yellow-400'
+                                                                                }`
+                                                                            }, result.status_code)
+                                                                        ),
+                                                                        React.createElement('div', { className: 'flex justify-between' },
+                                                                            React.createElement('span', { className: 'text-gray-400' }, 'Response Time:'),
+                                                                            React.createElement('span', { className: 'text-blue-400' }, result.response_time_ms + 'ms')
+                                                                        )
+                                                                    )
+                                                                )
+                                                            )
+                                                        )
+                                                    )
+                                                ) :
+                                                React.createElement('div', { className: 'p-3 text-sm text-gray-500 text-center' }, 
+                                                    'No test results yet. Click "Test Route" to run a test.'
+                                                )
+                                        )
                                     )
                                 )
                             ) : React.createElement('div', { className: 'flex items-center justify-center h-full text-gray-500' },
