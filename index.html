@@ -14,6 +14,36 @@
     </head>
     <body class="bg-gray-900 text-gray-100">
         <div id="root"></div>
+        <style>
+            /* Remove number input spinners/steppers */
+            input[type="number"]::-webkit-outer-spin-button,
+            input[type="number"]::-webkit-inner-spin-button {
+                -webkit-appearance: none;
+                margin: 0;
+            }
+            
+            input[type="number"] {
+                -moz-appearance: textfield;
+                appearance: textfield;
+            }
+            
+            /* Remove dropdown arrows */
+            select {
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                appearance: none;
+                background-image: none;
+            }
+            
+            /* Add custom dropdown arrow */
+            select {
+                background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+                background-repeat: no-repeat;
+                background-position: right 8px center;
+                background-size: 16px;
+                padding-right: 32px;
+            }
+        </style>
 
         <script>
             console.log("Script starting to load...");
@@ -94,16 +124,17 @@
                             return newCollection;
                         case "create_route":
                             console.log("Creating route:", args);
+                            const routeData = args.request || args;
                             const newRoute = {
                                 id: Date.now().toString(),
-                                collection_id: args.collection_id,
-                                name: args.name,
-                                method: args.method,
-                                path: args.path,
-                                status_code: args.status_code,
-                                response_body: args.response_body,
-                                response_headers: args.response_headers,
-                                delay_ms: args.delay_ms,
+                                collection_id: routeData.collection_id,
+                                name: routeData.name,
+                                method: routeData.method,
+                                path: routeData.path,
+                                status_code: routeData.status_code,
+                                response_body: routeData.response_body,
+                                response_headers: routeData.response_headers,
+                                delay_ms: routeData.delay_ms,
                                 created_at: new Date().toISOString(),
                                 updated_at: new Date().toISOString()
                             };
@@ -128,8 +159,10 @@
                             const collectionToStop = mockStorage.collections.find(c => c.port === args.port);
                             if (collectionToStop) {
                                 mockStorage.runningServers.delete(collectionToStop.id);
-                            }
-                            return undefined;
+                                return { success: true };
+                            } else {
+                                throw new Error("Server not found");
+                            };
                         case "test_route":
                             console.log("Testing route:", args.route_id);
                             const route = mockStorage.routes.find(r => r.id === args.route_id);
@@ -206,6 +239,8 @@
                 const [testResults, setTestResults] = useState([]);
                 const [expandedResults, setExpandedResults] = useState({});
                 const [showTestResults, setShowTestResults] = useState(true);
+                const [showTestHistory, setShowTestHistory] = useState(false);
+                const [allTestHistory, setAllTestHistory] = useState([]);
                 const [editingCollection, setEditingCollection] = useState(null);
                 const [showEditCollection, setShowEditCollection] = useState(false);
                 const [editingRoute, setEditingRoute] = useState(null);
@@ -215,7 +250,38 @@
                     console.log("App useEffect running");
                     loadCollections();
                     loadServers();
+                    loadTestHistory();
                 }, []);
+
+                const loadTestHistory = () => {
+                    try {
+                        const savedHistory = localStorage.getItem('mocify_test_history');
+                        if (savedHistory) {
+                            const parsedHistory = JSON.parse(savedHistory);
+                            setAllTestHistory(parsedHistory);
+                        }
+                    } catch (error) {
+                        console.error("Failed to load test history:", error);
+                    }
+                };
+
+                const saveTestResult = (testResult) => {
+                    try {
+                        const currentHistory = JSON.parse(localStorage.getItem('mocify_test_history') || '[]');
+                        const updatedHistory = [testResult, ...currentHistory].slice(0, 100); // Keep last 100 results
+                        localStorage.setItem('mocify_test_history', JSON.stringify(updatedHistory));
+                        setAllTestHistory(updatedHistory);
+                    } catch (error) {
+                        console.error("Failed to save test result:", error);
+                    }
+                };
+
+                const clearTestHistory = () => {
+                    if (window.confirm("Are you sure you want to clear all test history?")) {
+                        localStorage.removeItem('mocify_test_history');
+                        setAllTestHistory([]);
+                    }
+                };
 
                 useEffect(() => {
                     if (selectedCollection) {
@@ -228,9 +294,9 @@
                     try {
                         console.log("Calling tauri.invoke with get_collections");
                         const data = await tauri.invoke("get_collections");
-                        console.log("get_collections result:", data);
-                        setCollections(data);
-                        console.log("Collections state updated");
+                        console.log("get_collections result:", data, "count:", data.length);
+                        setCollections([...data]); // Force new array to trigger re-render
+                        console.log("Collections state updated with", data.length, "collections");
                     } catch (error) {
                         console.error("Failed to load collections:", error);
                     }
@@ -299,6 +365,7 @@
                     }
                 };
 
+
                 const createRoute = async (routeData) => {
                     try {
                         await tauri.invoke("create_route", {
@@ -338,6 +405,7 @@
                     }
                 };
 
+
                 const startServer = async (collectionId) => {
                     try {
                         await tauri.invoke("start_server", {
@@ -350,11 +418,15 @@
                 };
 
                 const stopServer = async (port) => {
+                    console.log("Stopping server on port:", port);
                     try {
-                        await tauri.invoke("stop_server", { port });
+                        const result = await tauri.invoke("stop_server", { port });
+                        console.log("Stop server result:", result);
                         await loadServers();
+                        console.log("Servers reloaded after stop");
                     } catch (error) {
                         console.error("Failed to stop server:", error);
+                        console.error("Error details:", error);
                     }
                 };
 
@@ -386,6 +458,7 @@
                             error: null
                         };
                         setTestResults(prev => [testResult, ...prev]);
+                        saveTestResult(testResult);
                         console.log("Test successful! Status:", result.status_code, "Response Time:", result.response_time_ms + "ms");
                         console.log("Test result object:", testResult);
                     } catch (error) {
@@ -411,6 +484,7 @@
                             error: error.message || 'Test failed'
                         };
                         setTestResults(prev => [testResult, ...prev]);
+                        saveTestResult(testResult);
                         console.error("Test failed:", error);
                     }
                 };
@@ -459,7 +533,7 @@
                                             server?.is_running && React.createElement('span', { className: 'w-2 h-2 bg-green-500 rounded-full' })
                                         )
                                     ),
-                                    React.createElement('div', { className: 'flex items-center justify-end space-x-1 mt-2 opacity-60 hover:opacity-100 transition-opacity' },
+                                    React.createElement('div', { className: 'flex items-center justify-end space-x-1 mt-2 opacity-80 hover:opacity-100 transition-opacity' },
                                         React.createElement('button', {
                                             onClick: (e) => {
                                                 e.stopPropagation();
@@ -546,7 +620,7 @@
                                             ),
                                             React.createElement('div', { className: 'text-xs text-gray-500 mt-1' }, route.name)
                                         ),
-                                        React.createElement('div', { className: 'flex items-center justify-end space-x-1 mt-2 opacity-60 hover:opacity-100 transition-opacity' },
+                                        React.createElement('div', { className: 'flex items-center justify-end space-x-1 mt-2 opacity-80 hover:opacity-100 transition-opacity' },
                                             React.createElement('button', {
                                                 onClick: (e) => {
                                                     e.stopPropagation();
@@ -624,13 +698,25 @@
                                     ),
                                     React.createElement('div', null,
                                         React.createElement('div', { 
-                                            className: 'flex items-center justify-between mb-2 cursor-pointer',
-                                            onClick: () => setShowTestResults(!showTestResults)
+                                            className: 'flex items-center justify-between mb-2'
                                         },
-                                            React.createElement('label', { className: 'text-sm font-medium text-gray-400' }, 'Test Results'),
-                                            React.createElement('i', { 
-                                                className: `fas fa-chevron-${showTestResults ? 'down' : 'right'} text-xs text-gray-400`
-                                            })
+                                            React.createElement('div', { 
+                                                className: 'flex items-center cursor-pointer',
+                                                onClick: () => setShowTestResults(!showTestResults)
+                                            },
+                                                React.createElement('label', { className: 'text-sm font-medium text-gray-400' }, 'Test Results'),
+                                                React.createElement('i', { 
+                                                    className: `fas fa-chevron-${showTestResults ? 'down' : 'right'} text-xs text-gray-400 ml-2`
+                                                })
+                                            ),
+                                            React.createElement('button', {
+                                                onClick: () => setShowTestHistory(true),
+                                                className: 'text-blue-400 hover:text-blue-300 text-xs px-2 py-1 rounded border border-blue-400 hover:border-blue-300',
+                                                title: 'View Test History'
+                                            },
+                                                React.createElement('i', { className: 'fas fa-history mr-1' }),
+                                                'History'
+                                            )
                                         ),
                                         showTestResults && React.createElement('div', { className: 'bg-gray-800 rounded max-h-80 overflow-y-auto' },
                                             testResults.filter(result => result.routeId === selectedRoute.id).length > 0 ?
@@ -781,6 +867,14 @@
                             setEditingRoute(null);
                         },
                         onSave: updateRoute
+                    }),
+
+                    // Modal for Test History
+                    showTestHistory && React.createElement(TestHistoryModal, {
+                        show: showTestHistory,
+                        testHistory: allTestHistory,
+                        onClose: () => setShowTestHistory(false),
+                        onClear: clearTestHistory
                     })
                 );
             }
@@ -1402,6 +1496,139 @@
                                     className: 'px-4 py-2 bg-blue-600 rounded hover:bg-blue-500'
                                 }, 'Update')
                             )
+                        )
+                    )
+                );
+            }
+
+            function TestHistoryModal({ show, testHistory, onClose, onClear }) {
+                const [filterText, setFilterText] = useState("");
+                const [expandedHistory, setExpandedHistory] = useState({});
+
+                if (!show) return null;
+
+                const filteredHistory = testHistory.filter(result => 
+                    result.routeName.toLowerCase().includes(filterText.toLowerCase()) ||
+                    result.method.toLowerCase().includes(filterText.toLowerCase()) ||
+                    result.path.toLowerCase().includes(filterText.toLowerCase())
+                );
+
+                const groupedByDate = filteredHistory.reduce((acc, result) => {
+                    const date = new Date(result.timestamp).toLocaleDateString();
+                    if (!acc[date]) acc[date] = [];
+                    acc[date].push(result);
+                    return acc;
+                }, {});
+
+                return React.createElement('div', { className: 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50' },
+                    React.createElement('div', { className: 'bg-gray-800 p-6 rounded-lg w-[800px] h-[80vh] flex flex-col' },
+                        React.createElement('div', { className: 'flex items-center justify-between mb-4' },
+                            React.createElement('h3', { className: 'text-lg font-semibold' }, 'Test History'),
+                            React.createElement('div', { className: 'flex items-center space-x-2' },
+                                React.createElement('button', {
+                                    onClick: onClear,
+                                    className: 'bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm'
+                                }, 'Clear History'),
+                                React.createElement('button', {
+                                    onClick: onClose,
+                                    className: 'bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm'
+                                }, 'Close')
+                            )
+                        ),
+                        
+                        React.createElement('div', { className: 'mb-4' },
+                            React.createElement('input', {
+                                type: 'text',
+                                placeholder: 'Filter by route name, method, or path...',
+                                value: filterText,
+                                onChange: (e) => setFilterText(e.target.value),
+                                className: 'w-full p-2 bg-gray-700 rounded'
+                            })
+                        ),
+
+                        React.createElement('div', { className: 'flex-1 overflow-y-auto' },
+                            Object.keys(groupedByDate).length > 0 ? 
+                                Object.entries(groupedByDate).map(([date, results]) =>
+                                    React.createElement('div', { key: date, className: 'mb-4' },
+                                        React.createElement('h4', { className: 'text-sm font-semibold text-gray-400 mb-2 border-b border-gray-600 pb-1' }, date),
+                                        React.createElement('div', { className: 'space-y-2' },
+                                            ...results.map(result =>
+                                                React.createElement('div', {
+                                                    key: result.id,
+                                                    className: `bg-gray-700 rounded p-3 ${result.success ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500'}`
+                                                },
+                                                    React.createElement('div', { 
+                                                        className: 'cursor-pointer',
+                                                        onClick: () => setExpandedHistory(prev => ({
+                                                            ...prev,
+                                                            [result.id]: !prev[result.id]
+                                                        }))
+                                                    },
+                                                        React.createElement('div', { className: 'flex items-center justify-between' },
+                                                            React.createElement('div', { className: 'flex items-center space-x-3' },
+                                                                React.createElement('span', {
+                                                                    className: `inline-block w-2 h-2 rounded-full ${result.success ? 'bg-green-500' : 'bg-red-500'}`
+                                                                }),
+                                                                React.createElement('span', { className: 'text-sm font-medium' }, result.routeName),
+                                                                React.createElement('span', { 
+                                                                    className: `text-xs font-bold ${
+                                                                        result.method === 'GET' ? 'text-green-400' :
+                                                                        result.method === 'POST' ? 'text-blue-400' :
+                                                                        result.method === 'PUT' ? 'text-yellow-400' :
+                                                                        result.method === 'DELETE' ? 'text-red-400' : 'text-gray-400'
+                                                                    }`
+                                                                }, result.method),
+                                                                React.createElement('span', { className: 'text-xs text-gray-400' }, result.path)
+                                                            ),
+                                                            React.createElement('div', { className: 'flex items-center space-x-3' },
+                                                                React.createElement('span', { className: 'text-xs text-gray-500' }, 
+                                                                    new Date(result.timestamp).toLocaleTimeString()
+                                                                ),
+                                                                result.success && React.createElement('span', { 
+                                                                    className: `text-xs font-bold ${
+                                                                        result.status_code >= 200 && result.status_code < 300 ? 'text-green-400' :
+                                                                        result.status_code >= 400 ? 'text-red-400' : 'text-yellow-400'
+                                                                    }`
+                                                                }, result.status_code),
+                                                                result.success && React.createElement('span', { className: 'text-xs text-gray-400' }, 
+                                                                    result.response_time_ms + 'ms'
+                                                                ),
+                                                                React.createElement('i', { 
+                                                                    className: `fas fa-chevron-${expandedHistory[result.id] ? 'down' : 'right'} text-xs text-gray-500`
+                                                                })
+                                                            )
+                                                        ),
+                                                        result.error && React.createElement('div', { className: 'text-xs text-red-400 mt-1' }, result.error)
+                                                    ),
+                                                    expandedHistory[result.id] && result.success && React.createElement('div', { className: 'mt-3 pt-3 border-t border-gray-600' },
+                                                        React.createElement('div', { className: 'grid grid-cols-1 gap-2 text-xs' },
+                                                            React.createElement('div', null,
+                                                                React.createElement('span', { className: 'text-gray-400' }, 'URL: '),
+                                                                React.createElement('span', { className: 'font-mono text-blue-300' }, result.url)
+                                                            ),
+                                                            result.response_headers && React.createElement('div', null,
+                                                                React.createElement('span', { className: 'text-gray-400' }, 'Headers: '),
+                                                                React.createElement('pre', { className: 'text-xs mt-1 bg-gray-800 p-2 rounded' }, 
+                                                                    JSON.stringify(result.response_headers, null, 2)
+                                                                )
+                                                            ),
+                                                            result.response_body && React.createElement('div', null,
+                                                                React.createElement('span', { className: 'text-gray-400' }, 'Response: '),
+                                                                React.createElement('pre', { className: 'text-xs mt-1 bg-gray-800 p-2 rounded max-h-32 overflow-y-auto' }, 
+                                                                    result.response_body
+                                                                )
+                                                            )
+                                                        )
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    )
+                                ) : 
+                                React.createElement('div', { className: 'text-center text-gray-500 py-8' },
+                                    React.createElement('i', { className: 'fas fa-history text-4xl mb-2' }),
+                                    React.createElement('p', null, 'No test history found')
+                                )
                         )
                     )
                 );
