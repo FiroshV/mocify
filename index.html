@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Mocify - API Mock Server</title>
+        <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+        <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        />
+    </head>
+    <body class="bg-gray-900 text-gray-100">
+        <div id="root"></div>
+
+        <script>
+            console.log("Script starting to load...");
+            const { useState, useEffect } = React;
+            const { createRoot } = ReactDOM;
+            console.log("React hooks loaded");
+
+            // Mock Tauri API for demonstration
+            // Mock data storage
+            const mockStorage = {
+                collections: [
+                    {
+                        id: "1",
+                        name: "User API",
+                        description: "Mock user endpoints",
+                        port: 3001,
+                        base_path: null,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString(),
+                    },
+                ],
+                routes: [
+                    {
+                        id: "1",
+                        collection_id: "1",
+                        name: "Get Users",
+                        method: "GET",
+                        path: "/users",
+                        status_code: 200,
+                        response_body: JSON.stringify(
+                            [
+                                { id: 1, name: "John Doe" },
+                                { id: 2, name: "Jane Smith" },
+                            ],
+                            null,
+                            2
+                        ),
+                        response_headers: {
+                            "Content-Type": "application/json",
+                        },
+                        delay_ms: 0,
+                    },
+                ],
+                servers: [],
+                runningServers: new Set() // Track which collections have running servers
+            };
+
+            const mockTauri = {
+                invoke: async (command, args) => {
+                    console.log("Mock Tauri command:", command, args);
+
+                    // Mock responses
+                    switch (command) {
+                        case "get_collections":
+                            return mockStorage.collections;
+                        case "get_routes":
+                            return mockStorage.routes.filter(route => route.collection_id === args.collection_id);
+                        case "get_running_servers":
+                            return mockStorage.collections.map(collection => ({
+                                port: collection.port,
+                                collection_id: collection.id,
+                                collection_name: collection.name,
+                                is_running: mockStorage.runningServers.has(collection.id),
+                                base_url: `http://localhost:${collection.port}`
+                            }));
+                        case "create_collection":
+                            console.log("Creating collection:", args);
+                            const newCollection = { 
+                                id: Date.now().toString(),
+                                name: args.request.name,
+                                description: args.request.description,
+                                port: args.request.port,
+                                base_path: args.request.base_path,
+                                created_at: new Date().toISOString(),
+                                updated_at: new Date().toISOString()
+                            };
+                            mockStorage.collections.push(newCollection);
+                            return newCollection;
+                        case "create_route":
+                            console.log("Creating route:", args);
+                            const newRoute = {
+                                id: Date.now().toString(),
+                                collection_id: args.collection_id,
+                                name: args.name,
+                                method: args.method,
+                                path: args.path,
+                                status_code: args.status_code,
+                                response_body: args.response_body,
+                                response_headers: args.response_headers,
+                                delay_ms: args.delay_ms,
+                                created_at: new Date().toISOString(),
+                                updated_at: new Date().toISOString()
+                            };
+                            mockStorage.routes.push(newRoute);
+                            return newRoute;
+                        case "start_server":
+                            console.log("Starting server for collection:", args.collection_id);
+                            const collection = mockStorage.collections.find(c => c.id === args.collection_id);
+                            if (!collection) {
+                                throw new Error("Collection not found");
+                            }
+                            mockStorage.runningServers.add(args.collection_id);
+                            return {
+                                port: collection.port,
+                                collection_id: collection.id,
+                                collection_name: collection.name,
+                                is_running: true,
+                                base_url: `http://localhost:${collection.port}`
+                            };
+                        case "stop_server":
+                            console.log("Stopping server on port:", args.port);
+                            const collectionToStop = mockStorage.collections.find(c => c.port === args.port);
+                            if (collectionToStop) {
+                                mockStorage.runningServers.delete(collectionToStop.id);
+                            }
+                            return undefined;
+                        case "test_route":
+                            console.log("Testing route:", args.route_id);
+                            return { 
+                                success: true, 
+                                status_code: 200, 
+                                response_time_ms: Math.floor(Math.random() * 100) + 10 
+                            };
+                        default:
+                            return { success: true };
+                    }
+                },
+            };
+
+            // Debug Tauri availability
+            console.log("Tauri available:", !!window.__TAURI__);
+            console.log("Tauri object:", window.__TAURI__);
+            console.log("Tauri keys:", Object.keys(window.__TAURI__ || {}));
+            
+            // Try to access Tauri invoke function in different ways
+            let realInvoke = null;
+            
+            // Check if Tauri provides invoke function automatically
+            if (window.__TAURI__) {
+                try {
+                    // Tauri might inject invoke function automatically in development
+                    if (typeof window.invoke === 'function') {
+                        realInvoke = window.invoke;
+                        console.log("Found invoke via window.invoke");
+                    } else if (typeof window.__TAURI_INVOKE__ === 'function') {
+                        realInvoke = window.__TAURI_INVOKE__;
+                        console.log("Found invoke via __TAURI_INVOKE__");
+                    } else {
+                        // Try other possible locations
+                        const tauriApi = window.__TAURI__.tauri || window.__TAURI__.core || window.__TAURI__;
+                        if (tauriApi && typeof tauriApi.invoke === 'function') {
+                            realInvoke = tauriApi.invoke;
+                            console.log("Found invoke via Tauri API object");
+                        }
+                    }
+                } catch (e) {
+                    console.log("Error accessing Tauri API:", e);
+                }
+            }
+            
+            console.log("Real invoke found:", !!realInvoke);
+            
+            // Use real Tauri if available, otherwise use mock
+            const tauri = {
+                invoke: realInvoke || mockTauri.invoke
+            };
+            console.log("Using tauri:", tauri);
+            console.log("Final invoke function:", realInvoke ? 'real' : 'mock');
+
+            function App() {
+                console.log("App component rendering");
+                const [collections, setCollections] = useState([]);
+                const [selectedCollection, setSelectedCollection] = useState(null);
+                const [routes, setRoutes] = useState([]);
+                const [selectedRoute, setSelectedRoute] = useState(null);
+                const [servers, setServers] = useState([]);
+                const [showNewCollection, setShowNewCollection] = useState(false);
+                const [showNewRoute, setShowNewRoute] = useState(false);
+
+                useEffect(() => {
+                    console.log("App useEffect running");
+                    loadCollections();
+                    loadServers();
+                }, []);
+
+                useEffect(() => {
+                    if (selectedCollection) {
+                        loadRoutes(selectedCollection.id);
+                    }
+                }, [selectedCollection]);
+
+                const loadCollections = async () => {
+                    console.log("loadCollections called");
+                    try {
+                        console.log("Calling tauri.invoke with get_collections");
+                        const data = await tauri.invoke("get_collections");
+                        console.log("get_collections result:", data);
+                        setCollections(data);
+                        console.log("Collections state updated");
+                    } catch (error) {
+                        console.error("Failed to load collections:", error);
+                    }
+                };
+
+                const loadRoutes = async (collectionId) => {
+                    try {
+                        const data = await tauri.invoke("get_routes", {
+                            collectionId: collectionId,
+                        });
+                        setRoutes(data);
+                    } catch (error) {
+                        console.error("Failed to load routes:", error);
+                    }
+                };
+
+                const loadServers = async () => {
+                    try {
+                        const data = await tauri.invoke("get_running_servers");
+                        setServers(data);
+                    } catch (error) {
+                        console.error("Failed to load servers:", error);
+                    }
+                };
+
+                const createCollection = async (collectionData) => {
+                    console.log("createCollection called with:", collectionData);
+                    try {
+                        console.log("Calling tauri.invoke with create_collection");
+                        const result = await tauri.invoke("create_collection", { request: collectionData });
+                        console.log("create_collection result:", result);
+                        console.log("Reloading collections...");
+                        await loadCollections();
+                        console.log("Collections reloaded successfully");
+                    } catch (error) {
+                        console.error("Failed to create collection:", error);
+                    }
+                };
+
+                const createRoute = async (routeData) => {
+                    try {
+                        await tauri.invoke("create_route", {
+                            request: {
+                                ...routeData,
+                                collection_id: selectedCollection.id
+                            }
+                        });
+                        await loadRoutes(selectedCollection.id);
+                    } catch (error) {
+                        console.error("Failed to create route:", error);
+                    }
+                };
+
+                const startServer = async (collectionId) => {
+                    try {
+                        await tauri.invoke("start_server", {
+                            collectionId: collectionId,
+                        });
+                        await loadServers();
+                    } catch (error) {
+                        console.error("Failed to start server:", error);
+                    }
+                };
+
+                const stopServer = async (port) => {
+                    try {
+                        await tauri.invoke("stop_server", { port });
+                        await loadServers();
+                    } catch (error) {
+                        console.error("Failed to stop server:", error);
+                    }
+                };
+
+                const testRoute = async (routeId) => {
+                    try {
+                        const result = await tauri.invoke("test_route", {
+                            request: {
+                                route_id: routeId,
+                            }
+                        });
+                        console.log("Test successful! Status:", result.status_code, "Response Time:", result.response_time_ms + "ms");
+                    } catch (error) {
+                        console.error("Test failed:", error);
+                    }
+                };
+
+                return React.createElement('div', { className: 'flex h-screen' },
+                    // Sidebar
+                    React.createElement('div', { className: 'w-80 bg-gray-800 border-r border-gray-700 overflow-y-auto' },
+                        React.createElement('div', { className: 'p-4' },
+                            React.createElement('h1', { className: 'text-2xl font-bold mb-6 text-blue-400' },
+                                React.createElement('i', { className: 'fas fa-server mr-2' }),
+                                'Mocify'
+                            ),
+                            React.createElement('div', { className: 'mb-4' },
+                                React.createElement('button', {
+                                    onClick: () => {
+                                        console.log("New Collection button clicked");
+                                        setShowNewCollection(true);
+                                    },
+                                    className: 'w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition'
+                                },
+                                    React.createElement('i', { className: 'fas fa-plus mr-2' }),
+                                    'New Collection'
+                                )
+                            ),
+                            React.createElement('h2', { className: 'text-sm font-semibold text-gray-400 uppercase mb-2' },
+                                'Collections'
+                            ),
+                            ...collections.map(collection => {
+                                const server = servers.find(s => s.collection_id === collection.id);
+                                return React.createElement('div', {
+                                    key: collection.id,
+                                    className: `p-3 rounded cursor-pointer mb-2 transition ${
+                                        selectedCollection?.id === collection.id ? 'bg-gray-700' : 'hover:bg-gray-700'
+                                    }`,
+                                    onClick: () => setSelectedCollection(collection)
+                                },
+                                    React.createElement('div', { className: 'flex items-center justify-between' },
+                                        React.createElement('div', { className: 'flex items-center' },
+                                            React.createElement('i', { className: 'fas fa-folder mr-2 text-yellow-500' }),
+                                            React.createElement('span', null, collection.name)
+                                        ),
+                                        React.createElement('div', { className: 'flex items-center space-x-2' },
+                                            React.createElement('span', { className: 'text-xs text-gray-400' }, ':' + collection.port),
+                                            server?.is_running && React.createElement('span', { className: 'w-2 h-2 bg-green-500 rounded-full' })
+                                        )
+                                    )
+                                );
+                            })
+                        )
+                    ),
+                    
+                    // Main Content
+                    React.createElement('div', { className: 'flex-1 flex' },
+                        // Routes List
+                        React.createElement('div', { className: 'w-96 bg-gray-850 border-r border-gray-700 overflow-y-auto' },
+                            selectedCollection ? React.createElement('div', { className: 'p-4' },
+                                React.createElement('div', { className: 'flex items-center justify-between mb-4' },
+                                    React.createElement('h2', { className: 'text-lg font-semibold' }, selectedCollection.name),
+                                    React.createElement('div', { className: 'flex space-x-2' },
+                                        servers.find(s => s.collection_id === selectedCollection.id)?.is_running ?
+                                            React.createElement('button', {
+                                                onClick: () => stopServer(selectedCollection.port),
+                                                className: 'bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition'
+                                            },
+                                                React.createElement('i', { className: 'fas fa-stop mr-1' }),
+                                                'Stop'
+                                            ) :
+                                            React.createElement('button', {
+                                                onClick: () => startServer(selectedCollection.id),
+                                                className: 'bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition'
+                                            },
+                                                React.createElement('i', { className: 'fas fa-play mr-1' }),
+                                                'Start'
+                                            )
+                                    )
+                                ),
+                                React.createElement('button', {
+                                    onClick: () => setShowNewRoute(true),
+                                    className: 'w-full bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded mb-4 transition'
+                                },
+                                    React.createElement('i', { className: 'fas fa-plus mr-2' }),
+                                    'New Route'
+                                ),
+                                ...routes.map(route =>
+                                    React.createElement('div', {
+                                        key: route.id,
+                                        className: `p-3 rounded cursor-pointer mb-2 transition ${
+                                            selectedRoute?.id === route.id ? 'bg-gray-700' : 'hover:bg-gray-700'
+                                        }`,
+                                        onClick: () => setSelectedRoute(route)
+                                    },
+                                        React.createElement('div', { className: 'flex items-center justify-between' },
+                                            React.createElement('div', null,
+                                                React.createElement('span', {
+                                                    className: `inline-block w-16 text-xs font-bold mr-2 ${
+                                                        route.method === 'GET' ? 'text-green-400' :
+                                                        route.method === 'POST' ? 'text-blue-400' :
+                                                        route.method === 'PUT' ? 'text-yellow-400' :
+                                                        route.method === 'DELETE' ? 'text-red-400' : 'text-gray-400'
+                                                    }`
+                                                }, route.method),
+                                                React.createElement('span', { className: 'text-sm' }, route.path)
+                                            ),
+                                            React.createElement('span', { className: 'text-xs text-gray-400' }, route.status_code)
+                                        ),
+                                        React.createElement('div', { className: 'text-xs text-gray-500 mt-1' }, route.name)
+                                    )
+                                )
+                            ) : React.createElement('div', { className: 'flex items-center justify-center h-full text-gray-500' },
+                                React.createElement('div', { className: 'text-center' },
+                                    React.createElement('i', { className: 'fas fa-folder-open text-4xl mb-2' }),
+                                    React.createElement('p', null, 'Select a collection')
+                                )
+                            )
+                        ),
+
+                        // Route Details
+                        React.createElement('div', { className: 'flex-1 bg-gray-850 overflow-y-auto' },
+                            selectedRoute ? React.createElement('div', { className: 'p-6' },
+                                React.createElement('div', { className: 'flex items-center justify-between mb-6' },
+                                    React.createElement('h3', { className: 'text-xl font-semibold' }, selectedRoute.name),
+                                    React.createElement('button', {
+                                        onClick: () => testRoute(selectedRoute.id),
+                                        className: 'bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded transition'
+                                    },
+                                        React.createElement('i', { className: 'fas fa-play mr-2' }),
+                                        'Test Route'
+                                    )
+                                ),
+                                React.createElement('div', { className: 'space-y-6' },
+                                    React.createElement('div', null,
+                                        React.createElement('label', { className: 'block text-sm font-medium text-gray-400 mb-2' }, 'Endpoint'),
+                                        React.createElement('div', { className: 'bg-gray-800 p-3 rounded font-mono text-sm' },
+                                            React.createElement('span', {
+                                                className: `font-bold mr-2 ${
+                                                    selectedRoute.method === 'GET' ? 'text-green-400' :
+                                                    selectedRoute.method === 'POST' ? 'text-blue-400' :
+                                                    selectedRoute.method === 'PUT' ? 'text-yellow-400' :
+                                                    selectedRoute.method === 'DELETE' ? 'text-red-400' : 'text-gray-400'
+                                                }`
+                                            }, selectedRoute.method),
+                                            selectedRoute.path
+                                        )
+                                    ),
+                                    React.createElement('div', null,
+                                        React.createElement('label', { className: 'block text-sm font-medium text-gray-400 mb-2' }, 'Status Code'),
+                                        React.createElement('div', { className: 'bg-gray-800 p-3 rounded' },
+                                            React.createElement('span', {
+                                                className: `font-bold ${
+                                                    selectedRoute.status_code >= 200 && selectedRoute.status_code < 300 ? 'text-green-400' :
+                                                    selectedRoute.status_code >= 400 ? 'text-red-400' : 'text-yellow-400'
+                                                }`
+                                            }, selectedRoute.status_code)
+                                        )
+                                    ),
+                                    selectedRoute.response_body && React.createElement('div', null,
+                                        React.createElement('label', { className: 'block text-sm font-medium text-gray-400 mb-2' }, 'Response Body'),
+                                        React.createElement('pre', { className: 'bg-gray-800 p-3 rounded overflow-x-auto text-sm' }, selectedRoute.response_body)
+                                    )
+                                )
+                            ) : React.createElement('div', { className: 'flex items-center justify-center h-full text-gray-500' },
+                                React.createElement('div', { className: 'text-center' },
+                                    React.createElement('i', { className: 'fas fa-route text-4xl mb-2' }),
+                                    React.createElement('p', null, 'Select a route')
+                                )
+                            )
+                        )
+                    ),
+
+                    // Modal for New Collection
+                    showNewCollection && React.createElement(NewCollectionModal, {
+                        show: showNewCollection,
+                        onClose: () => setShowNewCollection(false),
+                        onSave: createCollection
+                    }),
+
+                    // Modal for New Route
+                    showNewRoute && React.createElement(NewRouteModal, {
+                        show: showNewRoute,
+                        onClose: () => setShowNewRoute(false),
+                        onSave: createRoute
+                    })
+                );
+            }
+
+            function NewCollectionModal({ show, onClose, onSave }) {
+                const [name, setName] = useState("");
+                const [description, setDescription] = useState("");
+                const [port, setPort] = useState(3000);
+
+                const handleSubmit = (e) => {
+                    console.log("NewCollectionModal handleSubmit called");
+                    e.preventDefault();
+                    console.log("Form data:", { name, description, port });
+                    onSave({ name, description, port });
+                    setName("");
+                    setDescription("");
+                    setPort(3000);
+                    onClose();
+                };
+
+                if (!show) return null;
+
+                return React.createElement('div', { className: 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50' },
+                    React.createElement('div', { className: 'bg-gray-800 p-6 rounded-lg w-96' },
+                        React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, 'New Collection'),
+                        React.createElement('form', { onSubmit: handleSubmit },
+                            React.createElement('div', { className: 'mb-4' },
+                                React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Name'),
+                                React.createElement('input', {
+                                    type: 'text',
+                                    value: name,
+                                    onChange: (e) => setName(e.target.value),
+                                    className: 'w-full p-2 bg-gray-700 rounded',
+                                    required: true
+                                })
+                            ),
+                            React.createElement('div', { className: 'mb-4' },
+                                React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Description'),
+                                React.createElement('textarea', {
+                                    value: description,
+                                    onChange: (e) => setDescription(e.target.value),
+                                    className: 'w-full p-2 bg-gray-700 rounded',
+                                    rows: 3
+                                })
+                            ),
+                            React.createElement('div', { className: 'mb-4' },
+                                React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Port'),
+                                React.createElement('input', {
+                                    type: 'number',
+                                    value: port,
+                                    onChange: (e) => setPort(Number(e.target.value)),
+                                    className: 'w-full p-2 bg-gray-700 rounded',
+                                    required: true
+                                })
+                            ),
+                            React.createElement('div', { className: 'flex justify-end space-x-2' },
+                                React.createElement('button', {
+                                    type: 'button',
+                                    onClick: onClose,
+                                    className: 'px-4 py-2 bg-gray-600 rounded hover:bg-gray-500'
+                                }, 'Cancel'),
+                                React.createElement('button', {
+                                    type: 'submit',
+                                    className: 'px-4 py-2 bg-blue-600 rounded hover:bg-blue-500'
+                                }, 'Create')
+                            )
+                        )
+                    )
+                );
+            }
+
+            function NewRouteModal({ show, onClose, onSave }) {
+                const [name, setName] = useState("");
+                const [method, setMethod] = useState("GET");
+                const [path, setPath] = useState("");
+                const [statusCode, setStatusCode] = useState(200);
+                const [responseBody, setResponseBody] = useState("");
+
+                const handleSubmit = (e) => {
+                    e.preventDefault();
+                    onSave({ name, method, path, status_code: statusCode, response_body: responseBody });
+                    setName("");
+                    setMethod("GET");
+                    setPath("");
+                    setStatusCode(200);
+                    setResponseBody("");
+                    onClose();
+                };
+
+                if (!show) return null;
+
+                return React.createElement('div', { className: 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50' },
+                    React.createElement('div', { className: 'bg-gray-800 p-6 rounded-lg w-96' },
+                        React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, 'New Route'),
+                        React.createElement('form', { onSubmit: handleSubmit },
+                            React.createElement('div', { className: 'mb-4' },
+                                React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Name'),
+                                React.createElement('input', {
+                                    type: 'text',
+                                    value: name,
+                                    onChange: (e) => setName(e.target.value),
+                                    className: 'w-full p-2 bg-gray-700 rounded',
+                                    required: true
+                                })
+                            ),
+                            React.createElement('div', { className: 'mb-4' },
+                                React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Method'),
+                                React.createElement('select', {
+                                    value: method,
+                                    onChange: (e) => setMethod(e.target.value),
+                                    className: 'w-full p-2 bg-gray-700 rounded appearance-none border-none focus:outline-none focus:ring-2 focus:ring-blue-500'
+                                },
+                                    React.createElement('option', { value: 'GET' }, 'GET'),
+                                    React.createElement('option', { value: 'POST' }, 'POST'),
+                                    React.createElement('option', { value: 'PUT' }, 'PUT'),
+                                    React.createElement('option', { value: 'DELETE' }, 'DELETE')
+                                )
+                            ),
+                            React.createElement('div', { className: 'mb-4' },
+                                React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Path'),
+                                React.createElement('input', {
+                                    type: 'text',
+                                    value: path,
+                                    onChange: (e) => setPath(e.target.value),
+                                    className: 'w-full p-2 bg-gray-700 rounded',
+                                    placeholder: '/api/endpoint',
+                                    required: true
+                                })
+                            ),
+                            React.createElement('div', { className: 'mb-4' },
+                                React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Status Code'),
+                                React.createElement('input', {
+                                    type: 'number',
+                                    value: statusCode,
+                                    onChange: (e) => setStatusCode(Number(e.target.value)),
+                                    className: 'w-full p-2 bg-gray-700 rounded',
+                                    required: true
+                                })
+                            ),
+                            React.createElement('div', { className: 'mb-4' },
+                                React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Response Body'),
+                                React.createElement('textarea', {
+                                    value: responseBody,
+                                    onChange: (e) => setResponseBody(e.target.value),
+                                    className: 'w-full p-2 bg-gray-700 rounded',
+                                    rows: 4,
+                                    placeholder: '{"message": "Hello World"}'
+                                })
+                            ),
+                            React.createElement('div', { className: 'flex justify-end space-x-2' },
+                                React.createElement('button', {
+                                    type: 'button',
+                                    onClick: onClose,
+                                    className: 'px-4 py-2 bg-gray-600 rounded hover:bg-gray-500'
+                                }, 'Cancel'),
+                                React.createElement('button', {
+                                    type: 'submit',
+                                    className: 'px-4 py-2 bg-blue-600 rounded hover:bg-blue-500'
+                                }, 'Create')
+                            )
+                        )
+                    )
+                );
+            }
+
+            console.log("Creating root...");
+            const root = createRoot(document.getElementById('root'));
+            console.log("Rendering App...");
+            root.render(React.createElement(App));
+            console.log("App rendered!");
+        </script>
+    </body>
+</html>
