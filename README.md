@@ -148,3 +148,23 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Built with [Tauri](https://tauri.app/)
 - Database powered by [SQLite](https://www.sqlite.org/) via [SQLx](https://github.com/launchbadge/sqlx)
 - HTTP server built with [Axum](https://github.com/tokio-rs/axum)
+
+## TODO
+
+### Priority 1: Core Functionality
+- [ ] Edit/Delete collection
+- [ ] Edit/Delete route
+- [ ] Tab for params
+- [ ] Tab to add headers
+- [ ] Tab to add authorization
+
+### Priority 2: Workflow Improvements
+- [ ] Duplicate route
+- [ ] Duplicate collection
+- [ ] Persistent test results, with history
+
+### Priority 3: Advanced Features & Polish
+- [ ] Improve UI/UX , make it modern
+- [ ] Make it compatible for all platforms
+- [ ] Auto complete and suggestions using AI
+- [ ] API documentation creation tool
