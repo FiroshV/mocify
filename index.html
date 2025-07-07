@@ -206,6 +206,10 @@
                 const [testResults, setTestResults] = useState([]);
                 const [expandedResults, setExpandedResults] = useState({});
                 const [showTestResults, setShowTestResults] = useState(true);
+                const [editingCollection, setEditingCollection] = useState(null);
+                const [showEditCollection, setShowEditCollection] = useState(false);
+                const [editingRoute, setEditingRoute] = useState(null);
+                const [showEditRoute, setShowEditRoute] = useState(false);
 
                 useEffect(() => {
                     console.log("App useEffect running");
@@ -268,6 +272,33 @@
                     }
                 };
 
+                const updateCollection = async (collectionData) => {
+                    try {
+                        await tauri.invoke("update_collection", { request: collectionData });
+                        await loadCollections();
+                        setEditingCollection(null);
+                        setShowEditCollection(false);
+                    } catch (error) {
+                        console.error("Failed to update collection:", error);
+                    }
+                };
+
+                const deleteCollection = async (collectionId) => {
+                    if (window.confirm("Are you sure you want to delete this collection? This will also delete all its routes.")) {
+                        try {
+                            await tauri.invoke("delete_collection", { id: collectionId });
+                            await loadCollections();
+                            await loadServers();
+                            if (selectedCollection?.id === collectionId) {
+                                setSelectedCollection(null);
+                                setRoutes([]);
+                            }
+                        } catch (error) {
+                            console.error("Failed to delete collection:", error);
+                        }
+                    }
+                };
+
                 const createRoute = async (routeData) => {
                     try {
                         await tauri.invoke("create_route", {
@@ -279,6 +310,31 @@
                         await loadRoutes(selectedCollection.id);
                     } catch (error) {
                         console.error("Failed to create route:", error);
+                    }
+                };
+
+                const updateRoute = async (routeData) => {
+                    try {
+                        await tauri.invoke("update_route", { request: routeData });
+                        await loadRoutes(selectedCollection.id);
+                        setEditingRoute(null);
+                        setShowEditRoute(false);
+                    } catch (error) {
+                        console.error("Failed to update route:", error);
+                    }
+                };
+
+                const deleteRoute = async (routeId) => {
+                    if (window.confirm("Are you sure you want to delete this route?")) {
+                        try {
+                            await tauri.invoke("delete_route", { id: routeId });
+                            await loadRoutes(selectedCollection.id);
+                            if (selectedRoute?.id === routeId) {
+                                setSelectedRoute(null);
+                            }
+                        } catch (error) {
+                            console.error("Failed to delete route:", error);
+                        }
                     }
                 };
 
@@ -386,12 +442,14 @@
                                 const server = servers.find(s => s.collection_id === collection.id);
                                 return React.createElement('div', {
                                     key: collection.id,
-                                    className: `p-3 rounded cursor-pointer mb-2 transition ${
+                                    className: `p-3 rounded mb-2 transition ${
                                         selectedCollection?.id === collection.id ? 'bg-gray-700' : 'hover:bg-gray-700'
-                                    }`,
-                                    onClick: () => setSelectedCollection(collection)
+                                    }`
                                 },
-                                    React.createElement('div', { className: 'flex items-center justify-between' },
+                                    React.createElement('div', { 
+                                        className: 'flex items-center justify-between cursor-pointer',
+                                        onClick: () => setSelectedCollection(collection)
+                                    },
                                         React.createElement('div', { className: 'flex items-center' },
                                             React.createElement('i', { className: 'fas fa-folder mr-2 text-yellow-500' }),
                                             React.createElement('span', null, collection.name)
@@ -399,6 +457,29 @@
                                         React.createElement('div', { className: 'flex items-center space-x-2' },
                                             React.createElement('span', { className: 'text-xs text-gray-400' }, ':' + collection.port),
                                             server?.is_running && React.createElement('span', { className: 'w-2 h-2 bg-green-500 rounded-full' })
+                                        )
+                                    ),
+                                    React.createElement('div', { className: 'flex items-center justify-end space-x-1 mt-2 opacity-60 hover:opacity-100 transition-opacity' },
+                                        React.createElement('button', {
+                                            onClick: (e) => {
+                                                e.stopPropagation();
+                                                setEditingCollection(collection);
+                                                setShowEditCollection(true);
+                                            },
+                                            className: 'text-blue-400 hover:text-blue-300 text-xs p-1',
+                                            title: 'Edit Collection'
+                                        },
+                                            React.createElement('i', { className: 'fas fa-edit' })
+                                        ),
+                                        React.createElement('button', {
+                                            onClick: (e) => {
+                                                e.stopPropagation();
+                                                deleteCollection(collection.id);
+                                            },
+                                            className: 'text-red-400 hover:text-red-300 text-xs p-1',
+                                            title: 'Delete Collection'
+                                        },
+                                            React.createElement('i', { className: 'fas fa-trash' })
                                         )
                                     )
                                 );
@@ -441,26 +522,53 @@
                                 ...routes.map(route =>
                                     React.createElement('div', {
                                         key: route.id,
-                                        className: `p-3 rounded cursor-pointer mb-2 transition ${
+                                        className: `p-3 rounded mb-2 transition ${
                                             selectedRoute?.id === route.id ? 'bg-gray-700' : 'hover:bg-gray-700'
-                                        }`,
-                                        onClick: () => setSelectedRoute(route)
+                                        }`
                                     },
-                                        React.createElement('div', { className: 'flex items-center justify-between' },
-                                            React.createElement('div', null,
-                                                React.createElement('span', {
-                                                    className: `inline-block w-16 text-xs font-bold mr-2 ${
-                                                        route.method === 'GET' ? 'text-green-400' :
-                                                        route.method === 'POST' ? 'text-blue-400' :
-                                                        route.method === 'PUT' ? 'text-yellow-400' :
-                                                        route.method === 'DELETE' ? 'text-red-400' : 'text-gray-400'
-                                                    }`
-                                                }, route.method),
-                                                React.createElement('span', { className: 'text-sm' }, route.path)
+                                        React.createElement('div', { 
+                                            className: 'cursor-pointer',
+                                            onClick: () => setSelectedRoute(route)
+                                        },
+                                            React.createElement('div', { className: 'flex items-center justify-between' },
+                                                React.createElement('div', null,
+                                                    React.createElement('span', {
+                                                        className: `inline-block w-16 text-xs font-bold mr-2 ${
+                                                            route.method === 'GET' ? 'text-green-400' :
+                                                            route.method === 'POST' ? 'text-blue-400' :
+                                                            route.method === 'PUT' ? 'text-yellow-400' :
+                                                            route.method === 'DELETE' ? 'text-red-400' : 'text-gray-400'
+                                                        }`
+                                                    }, route.method),
+                                                    React.createElement('span', { className: 'text-sm' }, route.path)
+                                                ),
+                                                React.createElement('span', { className: 'text-xs text-gray-400' }, route.status_code)
                                             ),
-                                            React.createElement('span', { className: 'text-xs text-gray-400' }, route.status_code)
+                                            React.createElement('div', { className: 'text-xs text-gray-500 mt-1' }, route.name)
                                         ),
-                                        React.createElement('div', { className: 'text-xs text-gray-500 mt-1' }, route.name)
+                                        React.createElement('div', { className: 'flex items-center justify-end space-x-1 mt-2 opacity-60 hover:opacity-100 transition-opacity' },
+                                            React.createElement('button', {
+                                                onClick: (e) => {
+                                                    e.stopPropagation();
+                                                    setEditingRoute(route);
+                                                    setShowEditRoute(true);
+                                                },
+                                                className: 'text-blue-400 hover:text-blue-300 text-xs p-1',
+                                                title: 'Edit Route'
+                                            },
+                                                React.createElement('i', { className: 'fas fa-edit' })
+                                            ),
+                                            React.createElement('button', {
+                                                onClick: (e) => {
+                                                    e.stopPropagation();
+                                                    deleteRoute(route.id);
+                                                },
+                                                className: 'text-red-400 hover:text-red-300 text-xs p-1',
+                                                title: 'Delete Route'
+                                            },
+                                                React.createElement('i', { className: 'fas fa-trash' })
+                                            )
+                                        )
                                     )
                                 )
                             ) : React.createElement('div', { className: 'flex items-center justify-center h-full text-gray-500' },
@@ -651,6 +759,28 @@
                         show: showNewRoute,
                         onClose: () => setShowNewRoute(false),
                         onSave: createRoute
+                    }),
+
+                    // Modal for Edit Collection
+                    showEditCollection && React.createElement(EditCollectionModal, {
+                        show: showEditCollection,
+                        collection: editingCollection,
+                        onClose: () => {
+                            setShowEditCollection(false);
+                            setEditingCollection(null);
+                        },
+                        onSave: updateCollection
+                    }),
+
+                    // Modal for Edit Route
+                    showEditRoute && React.createElement(EditRouteModal, {
+                        show: showEditRoute,
+                        route: editingRoute,
+                        onClose: () => {
+                            setShowEditRoute(false);
+                            setEditingRoute(null);
+                        },
+                        onSave: updateRoute
                     })
                 );
             }
@@ -723,28 +853,514 @@
             }
 
             function NewRouteModal({ show, onClose, onSave }) {
+                const [activeTab, setActiveTab] = useState("basic");
                 const [name, setName] = useState("");
                 const [method, setMethod] = useState("GET");
                 const [path, setPath] = useState("");
                 const [statusCode, setStatusCode] = useState(200);
                 const [responseBody, setResponseBody] = useState("");
+                const [responseHeaders, setResponseHeaders] = useState({});
+                const [params, setParams] = useState([]);
+                const [authType, setAuthType] = useState("none");
+                const [authConfig, setAuthConfig] = useState({});
 
                 const handleSubmit = (e) => {
                     e.preventDefault();
-                    onSave({ name, method, path, status_code: statusCode, response_body: responseBody });
+                    onSave({ 
+                        name, 
+                        method, 
+                        path, 
+                        status_code: statusCode, 
+                        response_body: responseBody,
+                        response_headers: Object.keys(responseHeaders).length > 0 ? responseHeaders : null
+                    });
                     setName("");
                     setMethod("GET");
                     setPath("");
                     setStatusCode(200);
                     setResponseBody("");
+                    setResponseHeaders({});
+                    setParams([]);
+                    setAuthType("none");
+                    setAuthConfig({});
+                    setActiveTab("basic");
                     onClose();
+                };
+
+                const addParam = () => {
+                    setParams([...params, { key: "", value: "", description: "" }]);
+                };
+
+                const updateParam = (index, field, value) => {
+                    const newParams = [...params];
+                    newParams[index][field] = value;
+                    setParams(newParams);
+                };
+
+                const removeParam = (index) => {
+                    setParams(params.filter((_, i) => i !== index));
+                };
+
+                const addHeader = () => {
+                    const key = prompt("Header name:");
+                    if (key) {
+                        setResponseHeaders({...responseHeaders, [key]: ""});
+                    }
+                };
+
+                const updateHeader = (key, value) => {
+                    setResponseHeaders({...responseHeaders, [key]: value});
+                };
+
+                const removeHeader = (key) => {
+                    const newHeaders = {...responseHeaders};
+                    delete newHeaders[key];
+                    setResponseHeaders(newHeaders);
                 };
 
                 if (!show) return null;
 
+                const tabs = [
+                    { id: "basic", label: "Basic", icon: "fas fa-info-circle" },
+                    { id: "params", label: "Params", icon: "fas fa-list" },
+                    { id: "headers", label: "Headers", icon: "fas fa-file-code" },
+                    { id: "auth", label: "Auth", icon: "fas fa-lock" }
+                ];
+
+                return React.createElement('div', { className: 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50' },
+                    React.createElement('div', { className: 'bg-gray-800 p-6 rounded-lg w-[600px] max-h-[80vh] overflow-y-auto' },
+                        React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, 'New Route'),
+                        
+                        // Tab navigation
+                        React.createElement('div', { className: 'flex border-b border-gray-600 mb-4' },
+                            ...tabs.map(tab =>
+                                React.createElement('button', {
+                                    key: tab.id,
+                                    type: 'button',
+                                    onClick: () => setActiveTab(tab.id),
+                                    className: `px-4 py-2 text-sm font-medium border-b-2 transition ${
+                                        activeTab === tab.id 
+                                            ? 'border-blue-500 text-blue-400' 
+                                            : 'border-transparent text-gray-400 hover:text-gray-300'
+                                    }`
+                                },
+                                    React.createElement('i', { className: `${tab.icon} mr-2` }),
+                                    tab.label
+                                )
+                            )
+                        ),
+
+                        React.createElement('form', { onSubmit: handleSubmit },
+                            // Basic Tab
+                            activeTab === "basic" && React.createElement('div', { className: 'space-y-4' },
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Name'),
+                                    React.createElement('input', {
+                                        type: 'text',
+                                        value: name,
+                                        onChange: (e) => setName(e.target.value),
+                                        className: 'w-full p-2 bg-gray-700 rounded',
+                                        required: true
+                                    })
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Method'),
+                                    React.createElement('select', {
+                                        value: method,
+                                        onChange: (e) => setMethod(e.target.value),
+                                        className: 'w-full p-2 bg-gray-700 rounded'
+                                    },
+                                        React.createElement('option', { value: 'GET' }, 'GET'),
+                                        React.createElement('option', { value: 'POST' }, 'POST'),
+                                        React.createElement('option', { value: 'PUT' }, 'PUT'),
+                                        React.createElement('option', { value: 'DELETE' }, 'DELETE')
+                                    )
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Path'),
+                                    React.createElement('input', {
+                                        type: 'text',
+                                        value: path,
+                                        onChange: (e) => setPath(e.target.value),
+                                        className: 'w-full p-2 bg-gray-700 rounded',
+                                        placeholder: '/api/endpoint',
+                                        required: true
+                                    })
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Status Code'),
+                                    React.createElement('input', {
+                                        type: 'number',
+                                        value: statusCode,
+                                        onChange: (e) => setStatusCode(Number(e.target.value)),
+                                        className: 'w-full p-2 bg-gray-700 rounded',
+                                        required: true
+                                    })
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Response Body'),
+                                    React.createElement('textarea', {
+                                        value: responseBody,
+                                        onChange: (e) => setResponseBody(e.target.value),
+                                        className: 'w-full p-2 bg-gray-700 rounded',
+                                        rows: 6,
+                                        placeholder: '{"message": "Hello World"}'
+                                    })
+                                )
+                            ),
+
+                            // Params Tab
+                            activeTab === "params" && React.createElement('div', { className: 'space-y-4' },
+                                React.createElement('div', { className: 'flex items-center justify-between' },
+                                    React.createElement('h4', { className: 'text-md font-medium' }, 'Query Parameters'),
+                                    React.createElement('button', {
+                                        type: 'button',
+                                        onClick: addParam,
+                                        className: 'bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm'
+                                    }, 'Add Param')
+                                ),
+                                React.createElement('div', { className: 'space-y-2' },
+                                    ...params.map((param, index) =>
+                                        React.createElement('div', { 
+                                            key: index, 
+                                            className: 'grid grid-cols-4 gap-2 items-center'
+                                        },
+                                            React.createElement('input', {
+                                                type: 'text',
+                                                placeholder: 'Key',
+                                                value: param.key,
+                                                onChange: (e) => updateParam(index, 'key', e.target.value),
+                                                className: 'p-2 bg-gray-700 rounded text-sm'
+                                            }),
+                                            React.createElement('input', {
+                                                type: 'text',
+                                                placeholder: 'Value',
+                                                value: param.value,
+                                                onChange: (e) => updateParam(index, 'value', e.target.value),
+                                                className: 'p-2 bg-gray-700 rounded text-sm'
+                                            }),
+                                            React.createElement('input', {
+                                                type: 'text',
+                                                placeholder: 'Description',
+                                                value: param.description,
+                                                onChange: (e) => updateParam(index, 'description', e.target.value),
+                                                className: 'p-2 bg-gray-700 rounded text-sm'
+                                            }),
+                                            React.createElement('button', {
+                                                type: 'button',
+                                                onClick: () => removeParam(index),
+                                                className: 'text-red-400 hover:text-red-300 p-1'
+                                            },
+                                                React.createElement('i', { className: 'fas fa-trash' })
+                                            )
+                                        )
+                                    ),
+                                    params.length === 0 && React.createElement('p', { className: 'text-gray-500 text-sm text-center py-4' }, 
+                                        'No parameters defined. Click "Add Param" to add query parameters.'
+                                    )
+                                )
+                            ),
+
+                            // Headers Tab
+                            activeTab === "headers" && React.createElement('div', { className: 'space-y-4' },
+                                React.createElement('div', { className: 'flex items-center justify-between' },
+                                    React.createElement('h4', { className: 'text-md font-medium' }, 'Response Headers'),
+                                    React.createElement('button', {
+                                        type: 'button',
+                                        onClick: addHeader,
+                                        className: 'bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm'
+                                    }, 'Add Header')
+                                ),
+                                React.createElement('div', { className: 'space-y-2' },
+                                    ...Object.entries(responseHeaders).map(([key, value]) =>
+                                        React.createElement('div', { 
+                                            key: key, 
+                                            className: 'grid grid-cols-3 gap-2 items-center'
+                                        },
+                                            React.createElement('div', { className: 'p-2 bg-gray-900 rounded text-sm font-mono' }, key),
+                                            React.createElement('input', {
+                                                type: 'text',
+                                                placeholder: 'Value',
+                                                value: value,
+                                                onChange: (e) => updateHeader(key, e.target.value),
+                                                className: 'p-2 bg-gray-700 rounded text-sm'
+                                            }),
+                                            React.createElement('button', {
+                                                type: 'button',
+                                                onClick: () => removeHeader(key),
+                                                className: 'text-red-400 hover:text-red-300 p-1'
+                                            },
+                                                React.createElement('i', { className: 'fas fa-trash' })
+                                            )
+                                        )
+                                    ),
+                                    Object.keys(responseHeaders).length === 0 && React.createElement('p', { className: 'text-gray-500 text-sm text-center py-4' }, 
+                                        'No headers defined. Click "Add Header" to add response headers.'
+                                    )
+                                )
+                            ),
+
+                            // Auth Tab
+                            activeTab === "auth" && React.createElement('div', { className: 'space-y-4' },
+                                React.createElement('h4', { className: 'text-md font-medium mb-4' }, 'Authentication (Coming Soon)'),
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Auth Type'),
+                                    React.createElement('select', {
+                                        value: authType,
+                                        onChange: (e) => setAuthType(e.target.value),
+                                        className: 'w-full p-2 bg-gray-700 rounded',
+                                        disabled: true
+                                    },
+                                        React.createElement('option', { value: 'none' }, 'No Auth'),
+                                        React.createElement('option', { value: 'basic' }, 'Basic Auth'),
+                                        React.createElement('option', { value: 'bearer' }, 'Bearer Token'),
+                                        React.createElement('option', { value: 'apikey' }, 'API Key')
+                                    )
+                                ),
+                                React.createElement('p', { className: 'text-gray-500 text-sm' }, 
+                                    'Authentication options will be available in a future update.'
+                                )
+                            ),
+
+                            React.createElement('div', { className: 'flex justify-end space-x-2 mt-6 pt-4 border-t border-gray-600' },
+                                React.createElement('button', {
+                                    type: 'button',
+                                    onClick: onClose,
+                                    className: 'px-4 py-2 bg-gray-600 rounded hover:bg-gray-500'
+                                }, 'Cancel'),
+                                React.createElement('button', {
+                                    type: 'submit',
+                                    className: 'px-4 py-2 bg-blue-600 rounded hover:bg-blue-500'
+                                }, 'Create Route')
+                            )
+                        )
+                    )
+                );
+            }
+
+            function EditRouteModal({ show, route, onClose, onSave }) {
+                const [activeTab, setActiveTab] = useState("basic");
+                const [name, setName] = useState(route?.name || "");
+                const [method, setMethod] = useState(route?.method || "GET");
+                const [path, setPath] = useState(route?.path || "");
+                const [statusCode, setStatusCode] = useState(route?.status_code || 200);
+                const [responseBody, setResponseBody] = useState(route?.response_body || "");
+                const [responseHeaders, setResponseHeaders] = useState({});
+
+                React.useEffect(() => {
+                    if (route) {
+                        setName(route.name || "");
+                        setMethod(route.method || "GET");
+                        setPath(route.path || "");
+                        setStatusCode(route.status_code || 200);
+                        setResponseBody(route.response_body || "");
+                        setResponseHeaders(route.response_headers || {});
+                        setActiveTab("basic");
+                    }
+                }, [route]);
+
+                const handleSubmit = (e) => {
+                    e.preventDefault();
+                    onSave({ 
+                        id: route.id,
+                        name, 
+                        method, 
+                        path, 
+                        status_code: statusCode, 
+                        response_body: responseBody,
+                        response_headers: Object.keys(responseHeaders).length > 0 ? responseHeaders : null
+                    });
+                };
+
+                const addHeader = () => {
+                    const key = prompt("Header name:");
+                    if (key) {
+                        setResponseHeaders({...responseHeaders, [key]: ""});
+                    }
+                };
+
+                const updateHeader = (key, value) => {
+                    setResponseHeaders({...responseHeaders, [key]: value});
+                };
+
+                const removeHeader = (key) => {
+                    const newHeaders = {...responseHeaders};
+                    delete newHeaders[key];
+                    setResponseHeaders(newHeaders);
+                };
+
+                if (!show || !route) return null;
+
+                const tabs = [
+                    { id: "basic", label: "Basic", icon: "fas fa-info-circle" },
+                    { id: "headers", label: "Headers", icon: "fas fa-file-code" }
+                ];
+
+                return React.createElement('div', { className: 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50' },
+                    React.createElement('div', { className: 'bg-gray-800 p-6 rounded-lg w-[600px] max-h-[80vh] overflow-y-auto' },
+                        React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, 'Edit Route'),
+                        
+                        // Tab navigation
+                        React.createElement('div', { className: 'flex border-b border-gray-600 mb-4' },
+                            ...tabs.map(tab =>
+                                React.createElement('button', {
+                                    key: tab.id,
+                                    type: 'button',
+                                    onClick: () => setActiveTab(tab.id),
+                                    className: `px-4 py-2 text-sm font-medium border-b-2 transition ${
+                                        activeTab === tab.id 
+                                            ? 'border-blue-500 text-blue-400' 
+                                            : 'border-transparent text-gray-400 hover:text-gray-300'
+                                    }`
+                                },
+                                    React.createElement('i', { className: `${tab.icon} mr-2` }),
+                                    tab.label
+                                )
+                            )
+                        ),
+
+                        React.createElement('form', { onSubmit: handleSubmit },
+                            // Basic Tab
+                            activeTab === "basic" && React.createElement('div', { className: 'space-y-4' },
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Name'),
+                                    React.createElement('input', {
+                                        type: 'text',
+                                        value: name,
+                                        onChange: (e) => setName(e.target.value),
+                                        className: 'w-full p-2 bg-gray-700 rounded',
+                                        required: true
+                                    })
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Method'),
+                                    React.createElement('select', {
+                                        value: method,
+                                        onChange: (e) => setMethod(e.target.value),
+                                        className: 'w-full p-2 bg-gray-700 rounded'
+                                    },
+                                        React.createElement('option', { value: 'GET' }, 'GET'),
+                                        React.createElement('option', { value: 'POST' }, 'POST'),
+                                        React.createElement('option', { value: 'PUT' }, 'PUT'),
+                                        React.createElement('option', { value: 'DELETE' }, 'DELETE')
+                                    )
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Path'),
+                                    React.createElement('input', {
+                                        type: 'text',
+                                        value: path,
+                                        onChange: (e) => setPath(e.target.value),
+                                        className: 'w-full p-2 bg-gray-700 rounded',
+                                        placeholder: '/api/endpoint',
+                                        required: true
+                                    })
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Status Code'),
+                                    React.createElement('input', {
+                                        type: 'number',
+                                        value: statusCode,
+                                        onChange: (e) => setStatusCode(Number(e.target.value)),
+                                        className: 'w-full p-2 bg-gray-700 rounded',
+                                        required: true
+                                    })
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Response Body'),
+                                    React.createElement('textarea', {
+                                        value: responseBody,
+                                        onChange: (e) => setResponseBody(e.target.value),
+                                        className: 'w-full p-2 bg-gray-700 rounded',
+                                        rows: 6,
+                                        placeholder: '{"message": "Hello World"}'
+                                    })
+                                )
+                            ),
+
+                            // Headers Tab
+                            activeTab === "headers" && React.createElement('div', { className: 'space-y-4' },
+                                React.createElement('div', { className: 'flex items-center justify-between' },
+                                    React.createElement('h4', { className: 'text-md font-medium' }, 'Response Headers'),
+                                    React.createElement('button', {
+                                        type: 'button',
+                                        onClick: addHeader,
+                                        className: 'bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm'
+                                    }, 'Add Header')
+                                ),
+                                React.createElement('div', { className: 'space-y-2' },
+                                    ...Object.entries(responseHeaders).map(([key, value]) =>
+                                        React.createElement('div', { 
+                                            key: key, 
+                                            className: 'grid grid-cols-3 gap-2 items-center'
+                                        },
+                                            React.createElement('div', { className: 'p-2 bg-gray-900 rounded text-sm font-mono' }, key),
+                                            React.createElement('input', {
+                                                type: 'text',
+                                                placeholder: 'Value',
+                                                value: value,
+                                                onChange: (e) => updateHeader(key, e.target.value),
+                                                className: 'p-2 bg-gray-700 rounded text-sm'
+                                            }),
+                                            React.createElement('button', {
+                                                type: 'button',
+                                                onClick: () => removeHeader(key),
+                                                className: 'text-red-400 hover:text-red-300 p-1'
+                                            },
+                                                React.createElement('i', { className: 'fas fa-trash' })
+                                            )
+                                        )
+                                    ),
+                                    Object.keys(responseHeaders).length === 0 && React.createElement('p', { className: 'text-gray-500 text-sm text-center py-4' }, 
+                                        'No headers defined. Click "Add Header" to add response headers.'
+                                    )
+                                )
+                            ),
+
+                            React.createElement('div', { className: 'flex justify-end space-x-2 mt-6 pt-4 border-t border-gray-600' },
+                                React.createElement('button', {
+                                    type: 'button',
+                                    onClick: onClose,
+                                    className: 'px-4 py-2 bg-gray-600 rounded hover:bg-gray-500'
+                                }, 'Cancel'),
+                                React.createElement('button', {
+                                    type: 'submit',
+                                    className: 'px-4 py-2 bg-blue-600 rounded hover:bg-blue-500'
+                                }, 'Update Route')
+                            )
+                        )
+                    )
+                );
+            }
+
+            function EditCollectionModal({ show, collection, onClose, onSave }) {
+                const [name, setName] = useState(collection?.name || "");
+                const [description, setDescription] = useState(collection?.description || "");
+                const [port, setPort] = useState(collection?.port || 3000);
+
+                React.useEffect(() => {
+                    if (collection) {
+                        setName(collection.name || "");
+                        setDescription(collection.description || "");
+                        setPort(collection.port || 3000);
+                    }
+                }, [collection]);
+
+                const handleSubmit = (e) => {
+                    e.preventDefault();
+                    onSave({ 
+                        id: collection.id,
+                        name, 
+                        description: description || null, 
+                        port 
+                    });
+                };
+
+                if (!show || !collection) return null;
+
                 return React.createElement('div', { className: 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50' },
                     React.createElement('div', { className: 'bg-gray-800 p-6 rounded-lg w-96' },
-                        React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, 'New Route'),
+                        React.createElement('h3', { className: 'text-lg font-semibold mb-4' }, 'Edit Collection'),
                         React.createElement('form', { onSubmit: handleSubmit },
                             React.createElement('div', { className: 'mb-4' },
                                 React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Name'),
@@ -757,47 +1373,22 @@
                                 })
                             ),
                             React.createElement('div', { className: 'mb-4' },
-                                React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Method'),
-                                React.createElement('select', {
-                                    value: method,
-                                    onChange: (e) => setMethod(e.target.value),
-                                    className: 'w-full p-2 bg-gray-700 rounded appearance-none border-none focus:outline-none focus:ring-2 focus:ring-blue-500'
-                                },
-                                    React.createElement('option', { value: 'GET' }, 'GET'),
-                                    React.createElement('option', { value: 'POST' }, 'POST'),
-                                    React.createElement('option', { value: 'PUT' }, 'PUT'),
-                                    React.createElement('option', { value: 'DELETE' }, 'DELETE')
-                                )
-                            ),
-                            React.createElement('div', { className: 'mb-4' },
-                                React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Path'),
-                                React.createElement('input', {
-                                    type: 'text',
-                                    value: path,
-                                    onChange: (e) => setPath(e.target.value),
+                                React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Description'),
+                                React.createElement('textarea', {
+                                    value: description,
+                                    onChange: (e) => setDescription(e.target.value),
                                     className: 'w-full p-2 bg-gray-700 rounded',
-                                    placeholder: '/api/endpoint',
-                                    required: true
+                                    rows: 3
                                 })
                             ),
                             React.createElement('div', { className: 'mb-4' },
-                                React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Status Code'),
+                                React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Port'),
                                 React.createElement('input', {
                                     type: 'number',
-                                    value: statusCode,
-                                    onChange: (e) => setStatusCode(Number(e.target.value)),
+                                    value: port,
+                                    onChange: (e) => setPort(Number(e.target.value)),
                                     className: 'w-full p-2 bg-gray-700 rounded',
                                     required: true
-                                })
-                            ),
-                            React.createElement('div', { className: 'mb-4' },
-                                React.createElement('label', { className: 'block text-sm font-medium mb-2' }, 'Response Body'),
-                                React.createElement('textarea', {
-                                    value: responseBody,
-                                    onChange: (e) => setResponseBody(e.target.value),
-                                    className: 'w-full p-2 bg-gray-700 rounded',
-                                    rows: 4,
-                                    placeholder: '{"message": "Hello World"}'
                                 })
                             ),
                             React.createElement('div', { className: 'flex justify-end space-x-2' },
@@ -809,7 +1400,7 @@
                                 React.createElement('button', {
                                     type: 'submit',
                                     className: 'px-4 py-2 bg-blue-600 rounded hover:bg-blue-500'
-                                }, 'Create')
+                                }, 'Update')
                             )
                         )
                     )
