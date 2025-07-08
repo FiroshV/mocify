@@ -1,5 +1,24 @@
 import React, { useState } from 'react';
 
+// Utility function to format JSON
+const formatJSON = (jsonString) => {
+  if (!jsonString) return '';
+  
+  // If it's already an object, stringify it directly
+  if (typeof jsonString === 'object') {
+    return JSON.stringify(jsonString, null, 2);
+  }
+  
+  try {
+    const parsed = JSON.parse(jsonString);
+    return JSON.stringify(parsed, null, 2);
+  } catch (error) {
+    // If not valid JSON, return as-is
+    console.log('JSON formatting error:', error, 'Input:', jsonString);
+    return jsonString;
+  }
+};
+
 const TestHistoryModal = ({ show, testHistory, onClose, onClear }) => {
   const [filterText, setFilterText] = useState("");
   const [expandedHistory, setExpandedHistory] = useState({});
@@ -123,7 +142,7 @@ const TestHistoryModal = ({ show, testHistory, onClose, onClear }) => {
                               <div>
                                 <span className='text-gray-400'>Response: </span>
                                 <pre className='text-xs mt-1 bg-gray-800 p-2 rounded max-h-32 overflow-y-auto'>
-                                  {result.response_body}
+                                  {formatJSON(result.response_body)}
                                 </pre>
                               </div>
                             )}

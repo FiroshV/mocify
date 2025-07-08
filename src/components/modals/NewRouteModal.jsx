@@ -8,6 +8,28 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
   const [responseBody, setResponseBody] = useState("");
   const [delay, setDelay] = useState(0);
 
+  const handleBeautifyJson = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('Beautify button clicked, responseBody:', responseBody);
+    
+    if (!responseBody.trim()) {
+      alert('Please enter some JSON content first.');
+      return;
+    }
+    
+    try {
+      const parsed = JSON.parse(responseBody);
+      const formatted = JSON.stringify(parsed, null, 2);
+      console.log('Formatted JSON:', formatted);
+      setResponseBody(formatted);
+    } catch (error) {
+      console.error('JSON parsing error:', error);
+      alert('Invalid JSON format. Please check your JSON syntax.');
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     onSave({ 
@@ -96,11 +118,20 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
               </div>
             </div>
             <div className='mb-4'>
-              <label className='block text-sm font-medium mb-1'>Response Body</label>
+              <div className='flex justify-between items-center mb-1'>
+                <label className='block text-sm font-medium'>Response Body</label>
+                <button
+                  type='button'
+                  onClick={handleBeautifyJson}
+                  className='px-3 py-1 text-xs bg-green-600 rounded hover:bg-green-500 transition'
+                >
+                  Beautify JSON
+                </button>
+              </div>
               <textarea
                 value={responseBody}
                 onChange={(e) => setResponseBody(e.target.value)}
-                className='w-full p-2 rounded border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
+                className='w-full p-2 rounded border border-gray-500 font-mono whitespace-pre' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
                 rows={4}
                 placeholder='{"message": "Hello World"}'
                 required

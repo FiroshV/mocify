@@ -12,6 +12,31 @@ import NewRouteModal from './components/modals/NewRouteModal';
 import EditRouteModal from './components/modals/EditRouteModal';
 import TestHistoryModal from './components/modals/TestHistoryModal';
 
+// Utility function to format JSON
+const formatJSON = (jsonString) => {
+  if (!jsonString) return '';
+  
+  console.log('formatJSON called with:', typeof jsonString, jsonString);
+  
+  // If it's already an object, stringify it directly
+  if (typeof jsonString === 'object') {
+    const formatted = JSON.stringify(jsonString, null, 2);
+    console.log('Formatted object:', formatted);
+    return formatted;
+  }
+  
+  try {
+    const parsed = JSON.parse(jsonString);
+    const formatted = JSON.stringify(parsed, null, 2);
+    console.log('Formatted JSON:', formatted);
+    return formatted;
+  } catch (error) {
+    // If not valid JSON, return as-is
+    console.log('JSON formatting error:', error, 'Input:', jsonString);
+    return jsonString;
+  }
+};
+
 function App() {
   const [selectedCollection, setSelectedCollection] = useState(null);
   const [selectedRoute, setSelectedRoute] = useState(null);
@@ -405,7 +430,7 @@ function App() {
                                 {result.response_body && (
                                   <div>
                                     <div className='text-xs font-medium text-gray-400 mb-1'>Response Body</div>
-                                    <pre className='bg-gray-800 p-2 rounded text-xs font-mono max-h-32 overflow-y-auto'>{result.response_body}</pre>
+                                    <pre className='bg-gray-800 p-2 rounded text-xs font-mono max-h-32 overflow-y-auto whitespace-pre-wrap'>{formatJSON(result.response_body)}</pre>
                                   </div>
                                 )}
                               </div>
@@ -458,7 +483,27 @@ function App() {
                 {selectedRoute.response_body && (
                   <div>
                     <label className='block text-sm font-medium text-gray-400 mb-2'>Response Body</label>
-                    <pre className='bg-black p-3 rounded overflow-x-auto text-sm'>{selectedRoute.response_body}</pre>
+                    <pre className='bg-black p-3 rounded overflow-x-auto text-sm font-mono whitespace-pre-wrap'>{(() => {
+                      const original = selectedRoute.response_body;
+                      console.log('Right panel - original:', typeof original, original);
+                      
+                      // Test basic JSON formatting
+                      let formatted;
+                      try {
+                        if (typeof original === 'string') {
+                          const parsed = JSON.parse(original);
+                          formatted = JSON.stringify(parsed, null, 2);
+                        } else {
+                          formatted = JSON.stringify(original, null, 2);
+                        }
+                        console.log('Right panel - manually formatted:', formatted);
+                      } catch (e) {
+                        formatted = original;
+                        console.log('Right panel - formatting failed, using original');
+                      }
+                      
+                      return formatted;
+                    })()}</pre>
                   </div>
                 )}
               </div>
