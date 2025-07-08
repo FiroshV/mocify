@@ -8,25 +8,35 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
   const [responseBody, setResponseBody] = useState("");
   const [delay, setDelay] = useState(0);
 
-  const handleBeautifyJson = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleBeautifyJson = () => {
+    console.log('Beautify button clicked!');
+    console.log('Current responseBody:', responseBody);
+    console.log('responseBody type:', typeof responseBody);
+    console.log('responseBody length:', responseBody.length);
     
-    console.log('Beautify button clicked, responseBody:', responseBody);
-    
-    if (!responseBody.trim()) {
+    if (!responseBody || !responseBody.trim()) {
       alert('Please enter some JSON content first.');
       return;
     }
     
     try {
-      const parsed = JSON.parse(responseBody);
+      // Clean the JSON string by replacing smart quotes and other problematic characters
+      let cleanedJson = responseBody.trim()
+        .replace(/[\u201C\u201D]/g, '"')  // Replace smart double quotes
+        .replace(/[\u2018\u2019]/g, "'")  // Replace smart single quotes
+        .replace(/[\u2013\u2014]/g, '-')  // Replace em dashes
+        .replace(/\u00A0/g, ' ');        // Replace non-breaking spaces
+      
+      console.log('Cleaned JSON:', cleanedJson);
+      
+      const parsed = JSON.parse(cleanedJson);
       const formatted = JSON.stringify(parsed, null, 2);
-      console.log('Formatted JSON:', formatted);
+      console.log('Successfully formatted JSON:', formatted);
       setResponseBody(formatted);
     } catch (error) {
       console.error('JSON parsing error:', error);
-      alert('Invalid JSON format. Please check your JSON syntax.');
+      console.log('Problematic JSON string:', JSON.stringify(responseBody));
+      alert(`Invalid JSON format: ${error.message}\n\nTip: Make sure to use straight quotes (") not curly quotes (")`);
     }
   };
 
@@ -123,7 +133,10 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
                 <button
                   type='button'
                   onClick={handleBeautifyJson}
+                  onMouseDown={() => console.log('Mouse down on Beautify button')}
+                  onMouseUp={() => console.log('Mouse up on Beautify button')}
                   className='px-3 py-1 text-xs bg-green-600 rounded hover:bg-green-500 transition'
+                  style={{cursor: 'pointer', zIndex: 1000}}
                 >
                   Beautify JSON
                 </button>

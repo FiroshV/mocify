@@ -10,12 +10,18 @@ const formatJSON = (jsonString) => {
   }
   
   try {
-    const parsed = JSON.parse(jsonString);
+    // Clean the JSON string by replacing smart quotes and other problematic characters
+    let cleanedJson = jsonString.toString().trim()
+      .replace(/[\u201C\u201D]/g, '"')  // Replace smart double quotes
+      .replace(/[\u2018\u2019]/g, "'")  // Replace smart single quotes
+      .replace(/[\u2013\u2014]/g, '-')  // Replace em dashes
+      .replace(/\u00A0/g, ' ');        // Replace non-breaking spaces
+    
+    const parsed = JSON.parse(cleanedJson);
     return JSON.stringify(parsed, null, 2);
   } catch (error) {
     // If not valid JSON, return as-is
-    console.log('JSON formatting error:', error, 'Input:', jsonString);
-    return jsonString;
+    return jsonString.toString();
   }
 };
 

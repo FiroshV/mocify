@@ -151,19 +151,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## TODO
 
-### Priority 1: Core Functionality
-- [ ] Edit/Delete collection
-- [ ] Edit/Delete route
-- [ ] Tab for params
-- [ ] Tab to add headers
-- [ ] Tab to add authorization
-
-### Priority 2: Workflow Improvements
-- [ ] Duplicate route
-- [ ] Duplicate collection
-- [ ] Persistent test results, with history
-
-### Priority 3: Advanced Features & Polish
+### Advanced Features & Polish
 - [ ] Improve UI/UX , make it modern
 - [ ] Make it compatible for all platforms
 - [ ] Auto complete and suggestions using AI

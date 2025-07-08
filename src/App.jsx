@@ -16,24 +16,24 @@ import TestHistoryModal from './components/modals/TestHistoryModal';
 const formatJSON = (jsonString) => {
   if (!jsonString) return '';
   
-  console.log('formatJSON called with:', typeof jsonString, jsonString);
-  
   // If it's already an object, stringify it directly
   if (typeof jsonString === 'object') {
-    const formatted = JSON.stringify(jsonString, null, 2);
-    console.log('Formatted object:', formatted);
-    return formatted;
+    return JSON.stringify(jsonString, null, 2);
   }
   
   try {
-    const parsed = JSON.parse(jsonString);
-    const formatted = JSON.stringify(parsed, null, 2);
-    console.log('Formatted JSON:', formatted);
-    return formatted;
+    // Clean the JSON string by replacing smart quotes and other problematic characters
+    let cleanedJson = jsonString.toString().trim()
+      .replace(/[\u201C\u201D]/g, '"')  // Replace smart double quotes
+      .replace(/[\u2018\u2019]/g, "'")  // Replace smart single quotes
+      .replace(/[\u2013\u2014]/g, '-')  // Replace em dashes
+      .replace(/\u00A0/g, ' ');        // Replace non-breaking spaces
+    
+    const parsed = JSON.parse(cleanedJson);
+    return JSON.stringify(parsed, null, 2);
   } catch (error) {
     // If not valid JSON, return as-is
-    console.log('JSON formatting error:', error, 'Input:', jsonString);
-    return jsonString;
+    return jsonString.toString();
   }
 };
 
@@ -483,27 +483,7 @@ function App() {
                 {selectedRoute.response_body && (
                   <div>
                     <label className='block text-sm font-medium text-gray-400 mb-2'>Response Body</label>
-                    <pre className='bg-black p-3 rounded overflow-x-auto text-sm font-mono whitespace-pre-wrap'>{(() => {
-                      const original = selectedRoute.response_body;
-                      console.log('Right panel - original:', typeof original, original);
-                      
-                      // Test basic JSON formatting
-                      let formatted;
-                      try {
-                        if (typeof original === 'string') {
-                          const parsed = JSON.parse(original);
-                          formatted = JSON.stringify(parsed, null, 2);
-                        } else {
-                          formatted = JSON.stringify(original, null, 2);
-                        }
-                        console.log('Right panel - manually formatted:', formatted);
-                      } catch (e) {
-                        formatted = original;
-                        console.log('Right panel - formatting failed, using original');
-                      }
-                      
-                      return formatted;
-                    })()}</pre>
+                    <pre className='bg-black p-3 rounded overflow-x-auto text-sm font-mono whitespace-pre-wrap'>{formatJSON(selectedRoute.response_body)}</pre>
                   </div>
                 )}
               </div>
