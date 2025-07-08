@@ -6,6 +6,7 @@ const EditRouteModal = ({ show, route, onClose, onSave }) => {
   const [path, setPath] = useState(route?.path || "");
   const [statusCode, setStatusCode] = useState(route?.status_code || 200);
   const [responseBody, setResponseBody] = useState(route?.response_body || "");
+  const [delay, setDelay] = useState(route?.delay || 0);
 
   useEffect(() => {
     if (route) {
@@ -14,6 +15,7 @@ const EditRouteModal = ({ show, route, onClose, onSave }) => {
       setPath(route.path || "");
       setStatusCode(route.status_code || 200);
       setResponseBody(route.response_body || "");
+      setDelay(route.delay || 0);
     }
   }, [route]);
 
@@ -25,7 +27,8 @@ const EditRouteModal = ({ show, route, onClose, onSave }) => {
       method, 
       path, 
       status_code: statusCode, 
-      response_body: responseBody
+      response_body: responseBody,
+      delay: delay
     });
   };
 
@@ -81,6 +84,23 @@ const EditRouteModal = ({ show, route, onClose, onSave }) => {
                 className='w-full p-2 rounded border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
                 required
               />
+            </div>
+            <div>
+              <label className='block text-sm font-medium mb-2'>
+                Response Delay (milliseconds)
+                <span className='text-gray-500 text-xs ml-1'>(optional)</span>
+              </label>
+              <input
+                type='number'
+                value={delay}
+                onChange={(e) => setDelay(Number(e.target.value))}
+                className='w-full p-2 rounded border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
+                min='0'
+                placeholder='0'
+              />
+              <p className='text-xs text-gray-500 mt-1'>
+                Add artificial delay to simulate slower responses (0 = no delay)
+              </p>
             </div>
             <div>
               <label className='block text-sm font-medium mb-2'>Response Body</label>

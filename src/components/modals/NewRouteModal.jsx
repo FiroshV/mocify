@@ -6,6 +6,7 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
   const [path, setPath] = useState("");
   const [statusCode, setStatusCode] = useState(200);
   const [responseBody, setResponseBody] = useState("");
+  const [delay, setDelay] = useState(0);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -14,13 +15,15 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
       method, 
       path, 
       status_code: statusCode, 
-      response_body: responseBody
+      response_body: responseBody,
+      delay: delay
     });
     setName("");
     setMethod("GET");
     setPath("");
     setStatusCode(200);
     setResponseBody("");
+    setDelay(0);
     onClose();
   };
 
@@ -76,6 +79,23 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
                   className='w-full p-2 rounded border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
                   required
                 />
+              </div>
+              <div>
+                <label className='block text-sm font-medium mb-2'>
+                  Response Delay (milliseconds)
+                  <span className='text-gray-500 text-xs ml-1'>(optional)</span>
+                </label>
+                <input
+                  type='number'
+                  value={delay}
+                  onChange={(e) => setDelay(Number(e.target.value))}
+                  className='w-full p-2 rounded border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
+                  min='0'
+                  placeholder='0'
+                />
+                <p className='text-xs text-gray-500 mt-1'>
+                  Add artificial delay to simulate slower responses (0 = no delay)
+                </p>
               </div>
               <div>
                 <label className='block text-sm font-medium mb-2'>Response Body</label>

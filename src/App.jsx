@@ -443,6 +443,17 @@ function App() {
                     </span>
                   </div>
                 </div>
+                {selectedRoute.delay && selectedRoute.delay > 0 && (
+                  <div>
+                    <label className='block text-sm font-medium text-gray-400 mb-2'>Response Delay</label>
+                    <div className='bg-black p-3 rounded'>
+                      <span className='text-blue-400 font-bold'>{selectedRoute.delay}ms</span>
+                      <span className='text-gray-500 text-sm ml-2'>
+                        ({selectedRoute.delay / 1000}s)
+                      </span>
+                    </div>
+                  </div>
+                )}
                 
                 {selectedRoute.response_body && (
                   <div>
