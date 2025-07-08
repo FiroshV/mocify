@@ -298,14 +298,128 @@ function App() {
             <div className='p-6'>
               <div className='flex items-center justify-between mb-6'>
                 <h3 className='text-xl font-semibold'>{selectedRoute.name}</h3>
-                <button
-                  onClick={() => testRoute(selectedRoute.id)}
-                  className='bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded transition'
-                >
-                  <i className='fas fa-play mr-2' />
-                  Test Route
-                </button>
+                <div className='flex items-center space-x-3'>
+                  <button
+                    onClick={() => setShowTestHistory(true)}
+                    className='text-blue-400 hover:text-blue-300 text-sm px-3 py-2 rounded border border-blue-400 hover:border-blue-300 transition'
+                    title='View Test History'
+                  >
+                    <i className='fas fa-history mr-1' />
+                    History
+                  </button>
+                  <button
+                    onClick={() => testRoute(selectedRoute.id)}
+                    className='bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded transition'
+                  >
+                    <i className='fas fa-play mr-2' />
+                    Test Route
+                  </button>
+                </div>
               </div>
+              
+              {/* Test Results - Moved to top for better visibility */}
+              {currentTestResults.filter(result => result.routeId === selectedRoute.id).length > 0 && (
+                <div className='mb-6'>
+                  <div 
+                    className='flex items-center cursor-pointer mb-3'
+                    onClick={() => setShowTestResults(!showTestResults)}
+                  >
+                    <label className='text-sm font-medium text-gray-400'>Latest Test Results</label>
+                    <i className={`fas fa-chevron-${showTestResults ? 'down' : 'right'} text-xs text-gray-400 ml-2`} />
+                    <span className='ml-2 text-xs text-gray-500'>({currentTestResults.filter(result => result.routeId === selectedRoute.id).length})</span>
+                  </div>
+                  {showTestResults && (
+                    <div className='bg-gray-800 rounded border border-gray-700 max-h-60 overflow-y-auto'>
+                      {currentTestResults.filter(result => result.routeId === selectedRoute.id).slice(0, 5).map(result => (
+                        <div
+                          key={result.id}
+                          className={`border-b border-gray-700 last:border-b-0 ${result.success ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500'}`}
+                        >
+                          <div 
+                            className='p-3 cursor-pointer hover:bg-gray-750 transition'
+                            onClick={() => setExpandedResults(prev => ({
+                              ...prev,
+                              [result.id]: !prev[result.id]
+                            }))}
+                          >
+                            <div className='flex items-center justify-between'>
+                              <div className='flex items-center space-x-2'>
+                                <span className={`inline-block w-2 h-2 rounded-full ${result.success ? 'bg-green-500' : 'bg-red-500'}`} />
+                                <span className='text-xs text-gray-400'>
+                                  {new Date(result.timestamp).toLocaleTimeString()}
+                                </span>
+                                <span className={`text-xs font-medium ${
+                                  result.success ? 'text-green-400' : 'text-red-400'
+                                }`}>
+                                  {result.success ? 'Success' : 'Failed'}
+                                </span>
+                                <i className={`fas fa-chevron-${expandedResults[result.id] ? 'down' : 'right'} text-xs text-gray-500 ml-1`} />
+                              </div>
+                              <div className='flex items-center space-x-3'>
+                                {result.status_code && (
+                                  <span className={`text-xs font-bold px-2 py-1 rounded ${
+                                    result.status_code >= 200 && result.status_code < 300 ? 'text-green-400 bg-green-900/20' :
+                                    result.status_code >= 400 ? 'text-red-400 bg-red-900/20' : 'text-yellow-400 bg-yellow-900/20'
+                                  }`}>
+                                    {result.status_code}
+                                  </span>
+                                )}
+                                {result.response_time_ms && (
+                                  <span className='text-xs text-gray-400 bg-gray-700 px-2 py-1 rounded'>
+                                    {result.response_time_ms}ms
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {result.error && <div className='text-xs text-red-400 mt-1'>{result.error}</div>}
+                          </div>
+                          {expandedResults[result.id] && (
+                            <div className='px-3 pb-3 border-t border-gray-700 bg-gray-750'>
+                              <div className='space-y-3 mt-3'>
+                                <div>
+                                  <div className='text-xs font-medium text-gray-400 mb-1'>Request</div>
+                                  <div className='bg-gray-900 p-2 rounded text-xs font-mono'>
+                                    <div>
+                                      <span className={`font-bold ${
+                                        result.method === 'GET' ? 'text-green-400' :
+                                        result.method === 'POST' ? 'text-blue-400' :
+                                        result.method === 'PUT' ? 'text-yellow-400' :
+                                        result.method === 'DELETE' ? 'text-red-400' : 'text-gray-400'
+                                      }`}>
+                                        {result.method} 
+                                      </span>
+                                      <span className='text-blue-300'>{result.url || (result.path || '/')}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                {result.success && (
+                                  <div>
+                                    <div className='text-xs font-medium text-gray-400 mb-1'>Response Headers</div>
+                                    <div className='bg-gray-900 p-2 rounded text-xs font-mono max-h-32 overflow-y-auto'>
+                                      {result.response_headers ? Object.entries(result.response_headers).map(([key, value]) => (
+                                        <div key={key}>
+                                          <span className='text-blue-400'>{key}: </span>
+                                          <span className='text-gray-300'>{value}</span>
+                                        </div>
+                                      )) : 'No headers'}
+                                    </div>
+                                  </div>
+                                )}
+                                {result.response_body && (
+                                  <div>
+                                    <div className='text-xs font-medium text-gray-400 mb-1'>Response Body</div>
+                                    <pre className='bg-gray-900 p-2 rounded text-xs font-mono max-h-32 overflow-y-auto'>{result.response_body}</pre>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               <div className='space-y-6'>
                 <div>
                   <label className='block text-sm font-medium text-gray-400 mb-2'>Endpoint</label>
@@ -484,142 +598,6 @@ function App() {
                       </div>
                     )}
                   </div>
-                </div>
-                <div>
-                  <div className='flex items-center justify-between mb-2'>
-                    <div 
-                      className='flex items-center cursor-pointer'
-                      onClick={() => setShowTestResults(!showTestResults)}
-                    >
-                      <label className='text-sm font-medium text-gray-400'>Test Results</label>
-                      <i className={`fas fa-chevron-${showTestResults ? 'down' : 'right'} text-xs text-gray-400 ml-2`} />
-                    </div>
-                    <button
-                      onClick={() => setShowTestHistory(true)}
-                      className='text-blue-400 hover:text-blue-300 text-xs px-2 py-1 rounded border border-blue-400 hover:border-blue-300'
-                      title='View Test History'
-                    >
-                      <i className='fas fa-history mr-1' />
-                      History
-                    </button>
-                  </div>
-                  {showTestResults && (
-                    <div className='bg-gray-800 rounded max-h-80 overflow-y-auto'>
-                      {currentTestResults.filter(result => result.routeId === selectedRoute.id).length > 0 ?
-                        currentTestResults.filter(result => result.routeId === selectedRoute.id).map(result => (
-                          <div
-                            key={result.id}
-                            className={`border-b border-gray-700 last:border-b-0 ${result.success ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500'}`}
-                          >
-                            <div 
-                              className='p-3 cursor-pointer hover:bg-gray-750'
-                              onClick={() => setExpandedResults(prev => ({
-                                ...prev,
-                                [result.id]: !prev[result.id]
-                              }))}
-                            >
-                              <div className='flex items-center justify-between'>
-                                <div className='flex items-center space-x-2'>
-                                  <span className={`inline-block w-2 h-2 rounded-full ${result.success ? 'bg-green-500' : 'bg-red-500'}`} />
-                                  <span className='text-xs text-gray-400'>
-                                    {new Date(result.timestamp).toLocaleTimeString()}
-                                  </span>
-                                  <span className='text-xs text-gray-500 ml-2'>
-                                    {result.success ? 'Success' : 'Failed'}
-                                  </span>
-                                  <i className={`fas fa-chevron-${expandedResults[result.id] ? 'down' : 'right'} text-xs text-gray-500 ml-2`} />
-                                </div>
-                                <div className='flex items-center space-x-3'>
-                                  {result.status_code && (
-                                    <span className={`text-xs font-bold ${
-                                      result.status_code >= 200 && result.status_code < 300 ? 'text-green-400' :
-                                      result.status_code >= 400 ? 'text-red-400' : 'text-yellow-400'
-                                    }`}>
-                                      {result.status_code}
-                                    </span>
-                                  )}
-                                  {result.response_time_ms && (
-                                    <span className='text-xs text-gray-400'>
-                                      {result.response_time_ms}ms
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              {result.error && <div className='text-xs text-red-400'>{result.error}</div>}
-                            </div>
-                            {expandedResults[result.id] && (
-                              <div className='px-3 pb-3 border-t border-gray-700'>
-                                <div className='space-y-3 mt-3'>
-                                  <div>
-                                    <div className='text-xs font-medium text-gray-400 mb-1'>Request</div>
-                                    <div className='bg-gray-900 p-2 rounded text-xs font-mono'>
-                                      <div>
-                                        <span className={`font-bold ${
-                                          result.method === 'GET' ? 'text-green-400' :
-                                          result.method === 'POST' ? 'text-blue-400' :
-                                          result.method === 'PUT' ? 'text-yellow-400' :
-                                          result.method === 'DELETE' ? 'text-red-400' : 'text-gray-400'
-                                        }`}>
-                                          {result.method} 
-                                        </span>
-                                        <span className='text-blue-300'>{result.url || (result.path || '/')}</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  {result.success && (
-                                    <div>
-                                      <div className='text-xs font-medium text-gray-400 mb-1'>Response Headers</div>
-                                      <div className='bg-gray-900 p-2 rounded text-xs font-mono'>
-                                        {result.response_headers ? Object.entries(result.response_headers).map(([key, value]) => (
-                                          <div key={key}>
-                                            <span className='text-blue-400'>{key}: </span>
-                                            <span className='text-gray-300'>{value}</span>
-                                          </div>
-                                        )) : <span className='text-gray-500'>No headers</span>}
-                                      </div>
-                                    </div>
-                                  )}
-                                  {result.success && result.response_body && (
-                                    <div>
-                                      <div className='text-xs font-medium text-gray-400 mb-1'>Response Body</div>
-                                      <pre className='bg-gray-900 p-2 rounded text-xs overflow-x-auto'>
-                                        {result.response_body}
-                                      </pre>
-                                    </div>
-                                  )}
-                                  {result.success && (
-                                    <div>
-                                      <div className='text-xs font-medium text-gray-400 mb-1'>Performance</div>
-                                      <div className='bg-gray-900 p-2 rounded text-xs'>
-                                        <div className='flex justify-between'>
-                                          <span className='text-gray-400'>Status Code:</span>
-                                          <span className={`font-bold ${
-                                            result.status_code >= 200 && result.status_code < 300 ? 'text-green-400' :
-                                            result.status_code >= 400 ? 'text-red-400' : 'text-yellow-400'
-                                          }`}>
-                                            {result.status_code}
-                                          </span>
-                                        </div>
-                                        <div className='flex justify-between'>
-                                          <span className='text-gray-400'>Response Time:</span>
-                                          <span className='text-blue-400'>{result.response_time_ms}ms</span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )) :
-                        (
-                          <div className='p-3 text-sm text-gray-500 text-center'>
-                            No test results yet. Click "Test Route" to run a test.
-                          </div>
-                        )
-                      }
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
