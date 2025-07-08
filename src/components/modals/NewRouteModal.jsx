@@ -31,13 +31,13 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
 
   return (
     <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
-      <div className='bg-gray-800 p-6 rounded-lg w-96'>
+      <div className='bg-gray-800 p-6 rounded-lg w-[600px] max-h-[90vh] overflow-y-auto'>
         <h3 className='text-lg font-semibold mb-4'>New Route</h3>
 
         <form onSubmit={handleSubmit}>
-            <div className='space-y-4'>
+            <div className='grid grid-cols-2 gap-4 mb-4'>
               <div>
-                <label className='block text-sm font-medium mb-2'>Name</label>
+                <label className='block text-sm font-medium mb-1'>Name</label>
                 <input
                   type='text'
                   value={name}
@@ -47,7 +47,7 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
                 />
               </div>
               <div>
-                <label className='block text-sm font-medium mb-2'>Method</label>
+                <label className='block text-sm font-medium mb-1'>Method</label>
                 <select
                   value={method}
                   onChange={(e) => setMethod(e.target.value)}
@@ -60,7 +60,7 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
                 </select>
               </div>
               <div>
-                <label className='block text-sm font-medium mb-2'>Path</label>
+                <label className='block text-sm font-medium mb-1'>Path</label>
                 <input
                   type='text'
                   value={path}
@@ -71,7 +71,7 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
                 />
               </div>
               <div>
-                <label className='block text-sm font-medium mb-2'>Status Code</label>
+                <label className='block text-sm font-medium mb-1'>Status Code</label>
                 <input
                   type='number'
                   value={statusCode}
@@ -80,9 +80,9 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
                   required
                 />
               </div>
-              <div>
-                <label className='block text-sm font-medium mb-2'>
-                  Response Delay (milliseconds)
+              <div className='col-span-2'>
+                <label className='block text-sm font-medium mb-1'>
+                  Response Delay (ms)
                   <span className='text-gray-500 text-xs ml-1'>(optional)</span>
                 </label>
                 <input
@@ -93,21 +93,18 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
                   min='0'
                   placeholder='0'
                 />
-                <p className='text-xs text-gray-500 mt-1'>
-                  Add artificial delay to simulate slower responses (0 = no delay)
-                </p>
               </div>
-              <div>
-                <label className='block text-sm font-medium mb-2'>Response Body</label>
-                <textarea
-                  value={responseBody}
-                  onChange={(e) => setResponseBody(e.target.value)}
-                  className='w-full p-2 rounded border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
-                  rows={6}
-                  placeholder='{"message": "Hello World"}'
-                  required
-                />
-              </div>
+            </div>
+            <div className='mb-4'>
+              <label className='block text-sm font-medium mb-1'>Response Body</label>
+              <textarea
+                value={responseBody}
+                onChange={(e) => setResponseBody(e.target.value)}
+                className='w-full p-2 rounded border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
+                rows={4}
+                placeholder='{"message": "Hello World"}'
+                required
+              />
             </div>
           
           <div className='flex justify-end space-x-2 mt-6 pt-4 border-t border-gray-600'>
