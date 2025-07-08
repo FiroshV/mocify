@@ -2,17 +2,14 @@
   <!-- Background circle -->
   <circle cx="128" cy="128" r="100" fill="#000000"/>
   
-  <!-- Toggle switch track -->
-  <rect x="68" y="108" width="120" height="40" rx="20" fill="#374151"/>
+  <!-- iOS-style toggle switch track (green for active/mock state) -->
+  <rect x="98" y="113" width="60" height="30" rx="15" fill="#0ad55c"/>
   
-  <!-- Toggle button (positioned at extreme right for MOCK) -->
-  <circle cx="170" cy="128" r="18" fill="#10B981"/>
+  <!-- Toggle button (white circle positioned at right for active state, bigger size) -->
+  <circle cx="143" cy="128" r="13" fill="#FFFFFF"/>
+  <circle cx="143" cy="128" r="11" fill="#F9FAFB"/>
   
-  <!-- Labels positioned above the switch at extremes -->
-  <text x="86" y="100" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" fill="#6B7280" text-anchor="middle">REAL</text>
-  <text x="170" y="100" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600" fill="#10B981" text-anchor="middle">MOCK</text>
-  
-  <!-- Simple status indicators below -->
-  <circle cx="86" cy="170" r="6" fill="#DC2626" opacity="0.6"/>
-  <circle cx="170" cy="170" r="6" fill="#10B981"/>
+  <!-- Simple status indicators -->
+  <circle cx="118" cy="170" r="4" fill="#fe5150" opacity="0.4"/>
+  <circle cx="138" cy="170" r="4" fill="#0ad55c"/>
 </svg>
