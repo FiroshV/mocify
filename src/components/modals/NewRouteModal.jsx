@@ -70,6 +70,7 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
     { id: "basic", label: "Basic", icon: "fas fa-info-circle" },
     { id: "params", label: "Params", icon: "fas fa-list" },
     { id: "headers", label: "Headers", icon: "fas fa-file-code" },
+    { id: "body", label: "Body", icon: "fas fa-file-text" },
     { id: "auth", label: "Auth", icon: "fas fa-lock" }
   ];
 
@@ -153,6 +154,7 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
                   className='w-full p-2 rounded border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
                   rows={6}
                   placeholder='{"message": "Hello World"}'
+                  required
                 />
               </div>
             </div>
@@ -251,6 +253,42 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
                     No headers defined. Click "Add Header" to add response headers.
                   </p>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Body Tab */}
+          {activeTab === "body" && (
+            <div className='space-y-4'>
+              <h4 className='text-md font-medium mb-4'>Response Body</h4>
+              <div>
+                <label className='block text-sm font-medium mb-2'>Content Type</label>
+                <select
+                  className='w-full p-2 rounded border border-gray-500 mb-4' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
+                >
+                  <option value='application/json'>application/json</option>
+                  <option value='text/plain'>text/plain</option>
+                  <option value='text/html'>text/html</option>
+                  <option value='application/xml'>application/xml</option>
+                </select>
+              </div>
+              <div>
+                <label className='block text-sm font-medium mb-2'>Response Body</label>
+                <textarea
+                  value={responseBody}
+                  onChange={(e) => setResponseBody(e.target.value)}
+                  className='w-full p-2 rounded border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
+                  rows={12}
+                  placeholder='{"message": "Hello World", "status": "success"}'
+                />
+              </div>
+              <div className='text-sm text-gray-400'>
+                <p><strong>Tips:</strong></p>
+                <ul className='list-disc list-inside space-y-1 mt-2'>
+                  <li>Use valid JSON format for JSON responses</li>
+                  <li>You can use multi-line responses</li>
+                  <li>Leave empty for no response body</li>
+                </ul>
               </div>
             </div>
           )}
