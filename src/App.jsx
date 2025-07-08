@@ -143,7 +143,7 @@ function App() {
             return (
               <div
                 key={collection.id}
-                className={`p-3 rounded mb-2 transition ${
+                className={`py-2 px-3 rounded mb-2 transition ${
                   selectedCollection?.id === collection.id ? 'bg-gray-700' : 'hover:bg-gray-700'
                 }`}
               >
@@ -151,37 +151,37 @@ function App() {
                   className='flex items-center justify-between cursor-pointer'
                   onClick={() => setSelectedCollection(collection)}
                 >
-                  <div className='flex items-center'>
-                    <i className='fas fa-folder mr-2 text-yellow-500' />
-                    <span>{collection.name}</span>
+                  <div className='flex items-center min-w-0 flex-1'>
+                    <i className='fas fa-folder mr-2 text-yellow-500 flex-shrink-0' />
+                    <span className='truncate'>{collection.name}</span>
                   </div>
-                  <div className='flex items-center space-x-2'>
+                  <div className='flex items-center space-x-2 flex-shrink-0 ml-2'>
                     <span className='text-xs text-gray-400'>:{collection.port}</span>
                     {server?.is_running && <span className='w-2 h-2 bg-green-500 rounded-full' />}
+                    <div className='flex items-center space-x-1 opacity-80 hover:opacity-100 transition-opacity'>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingCollection(collection);
+                          setShowEditCollection(true);
+                        }}
+                        className='text-blue-400 hover:text-blue-300 text-xs p-1'
+                        title='Edit Collection'
+                      >
+                        <i className='fas fa-edit' />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteCollection(collection.id);
+                        }}
+                        className='text-red-400 hover:text-red-300 text-xs p-1'
+                        title='Delete Collection'
+                      >
+                        <i className='fas fa-trash' />
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <div className='flex items-center justify-end space-x-1 mt-2 opacity-80 hover:opacity-100 transition-opacity'>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditingCollection(collection);
-                      setShowEditCollection(true);
-                    }}
-                    className='text-blue-400 hover:text-blue-300 text-xs p-1'
-                    title='Edit Collection'
-                  >
-                    <i className='fas fa-edit' />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteCollection(collection.id);
-                    }}
-                    className='text-red-400 hover:text-red-300 text-xs p-1'
-                    title='Delete Collection'
-                  >
-                    <i className='fas fa-trash' />
-                  </button>
                 </div>
               </div>
             );
@@ -227,7 +227,7 @@ function App() {
               {routes.map(route => (
                 <div
                   key={route.id}
-                  className={`p-3 rounded mb-2 transition ${
+                  className={`py-2 px-3 rounded mb-2 transition ${
                     selectedRoute?.id === route.id ? 'bg-gray-700' : 'hover:bg-gray-700'
                   }`}
                 >
@@ -236,43 +236,47 @@ function App() {
                     onClick={() => setSelectedRoute(route)}
                   >
                     <div className='flex items-center justify-between'>
-                      <div>
-                        <span className={`inline-block w-16 text-xs font-bold mr-2 ${
-                          route.method === 'GET' ? 'text-green-400' :
-                          route.method === 'POST' ? 'text-blue-400' :
-                          route.method === 'PUT' ? 'text-yellow-400' :
-                          route.method === 'DELETE' ? 'text-red-400' : 'text-gray-400'
-                        }`}>
-                          {route.method}
-                        </span>
-                        <span className='text-sm'>{route.path}</span>
+                      <div className='min-w-0 flex-1'>
+                        <div className='flex items-center'>
+                          <span className={`inline-block w-12 text-xs font-bold mr-2 flex-shrink-0 ${
+                            route.method === 'GET' ? 'text-green-400' :
+                            route.method === 'POST' ? 'text-blue-400' :
+                            route.method === 'PUT' ? 'text-yellow-400' :
+                            route.method === 'DELETE' ? 'text-red-400' : 'text-gray-400'
+                          }`}>
+                            {route.method}
+                          </span>
+                          <span className='text-sm truncate'>{route.path}</span>
+                        </div>
+                        {route.name && <div className='text-xs text-gray-500 mt-1 truncate'>{route.name}</div>}
                       </div>
-                      <span className='text-xs text-gray-400'>{route.status_code}</span>
+                      <div className='flex items-center space-x-2 flex-shrink-0 ml-2'>
+                        <span className='text-xs text-gray-400'>{route.status_code}</span>
+                        <div className='flex items-center space-x-1 opacity-80 hover:opacity-100 transition-opacity'>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingRoute(route);
+                              setShowEditRoute(true);
+                            }}
+                            className='text-blue-400 hover:text-blue-300 text-xs p-1'
+                            title='Edit Route'
+                          >
+                            <i className='fas fa-edit' />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteRoute(route.id);
+                            }}
+                            className='text-red-400 hover:text-red-300 text-xs p-1'
+                            title='Delete Route'
+                          >
+                            <i className='fas fa-trash' />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <div className='text-xs text-gray-500 mt-1'>{route.name}</div>
-                  </div>
-                  <div className='flex items-center justify-end space-x-1 mt-2 opacity-80 hover:opacity-100 transition-opacity'>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingRoute(route);
-                        setShowEditRoute(true);
-                      }}
-                      className='text-blue-400 hover:text-blue-300 text-xs p-1'
-                      title='Edit Route'
-                    >
-                      <i className='fas fa-edit' />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteRoute(route.id);
-                      }}
-                      className='text-red-400 hover:text-red-300 text-xs p-1'
-                      title='Delete Route'
-                    >
-                      <i className='fas fa-trash' />
-                    </button>
                   </div>
                 </div>
               ))}
