@@ -24,7 +24,6 @@ function App() {
   const [showEditRoute, setShowEditRoute] = useState(false);
   const [expandedResults, setExpandedResults] = useState({});
   const [showTestResults, setShowTestResults] = useState(true);
-  const [activeTab, setActiveTab] = useState('params');
 
   // Custom hooks
   const { collections, createCollection, updateCollection, deleteCollection } = useCollections();
@@ -56,7 +55,6 @@ function App() {
         error: null
       };
       
-      setCurrentTestResults(prev => [testResult, ...prev]);
       saveTestResult(testResult);
       console.log("Test successful! Status:", result.status_code, "Response Time:", result.response_time_ms + "ms");
     } catch (error) {
@@ -76,7 +74,6 @@ function App() {
         error: error.message || 'Test failed'
       };
       
-      setCurrentTestResults(prev => [testResult, ...prev]);
       saveTestResult(testResult);
     }
   };
@@ -447,159 +444,12 @@ function App() {
                   </div>
                 </div>
                 
-                {/* Tabs */}
-                <div>
-                  <div className='border-b border-gray-600 mb-4'>
-                    <nav className='flex space-x-8'>
-                      {['params', 'authorization', 'headers', 'body'].map(tab => (
-                        <button
-                          key={tab}
-                          onClick={() => setActiveTab(tab)}
-                          className={`py-2 px-1 border-b-2 font-medium text-sm transition ${
-                            activeTab === tab
-                              ? 'border-purple-500 text-purple-400'
-                              : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
-                          }`}
-                        >
-                          {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                        </button>
-                      ))}
-                    </nav>
+                {selectedRoute.response_body && (
+                  <div>
+                    <label className='block text-sm font-medium text-gray-400 mb-2'>Response Body</label>
+                    <pre className='bg-black p-3 rounded overflow-x-auto text-sm'>{selectedRoute.response_body}</pre>
                   </div>
-                  
-                  {/* Tab Content */}
-                  <div className='min-h-80'>
-                    {activeTab === 'params' && (
-                      <div className='space-y-4'>
-                        <div>
-                          <label className='block text-sm font-medium text-gray-400 mb-2'>Query Parameters</label>
-                          <div className='bg-black p-3 rounded text-sm'>
-                            <div className='space-y-2'>
-                              <div className='flex items-center space-x-2'>
-                                <input 
-                                  type='text' 
-                                  placeholder='Parameter name' 
-                                  className='flex-1 border border-gray-500 rounded px-2 py-1 text-xs' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
-                                />
-                                <input 
-                                  type='text' 
-                                  placeholder='Parameter value' 
-                                  className='flex-1 border border-gray-500 rounded px-2 py-1 text-xs' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
-                                />
-                                <button className='text-red-400 hover:text-red-300 text-xs px-2'>
-                                  <i className='fas fa-trash' />
-                                </button>
-                              </div>
-                              <button className='text-blue-400 hover:text-blue-300 text-xs'>
-                                <i className='fas fa-plus mr-1' />
-                                Add Parameter
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                        <div>
-                          <label className='block text-sm font-medium text-gray-400 mb-2'>Path Parameters</label>
-                          <div className='bg-black p-3 rounded text-sm'>
-                            <div className='space-y-2'>
-                              <div className='flex items-center space-x-2'>
-                                <input 
-                                  type='text' 
-                                  placeholder='Parameter name' 
-                                  className='flex-1 border border-gray-500 rounded px-2 py-1 text-xs' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
-                                />
-                                <input 
-                                  type='text' 
-                                  placeholder='Parameter value' 
-                                  className='flex-1 border border-gray-500 rounded px-2 py-1 text-xs' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
-                                />
-                                <button className='text-red-400 hover:text-red-300 text-xs px-2'>
-                                  <i className='fas fa-trash' />
-                                </button>
-                              </div>
-                              <button className='text-blue-400 hover:text-blue-300 text-xs'>
-                                <i className='fas fa-plus mr-1' />
-                                Add Parameter
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {activeTab === 'authorization' && (
-                      <div className='space-y-4'>
-                        <div>
-                          <label className='block text-sm font-medium text-gray-400 mb-2'>Authorization Type</label>
-                          <select className='w-full border border-gray-500 rounded px-3 py-2 text-sm' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}>
-                            <option>No Auth</option>
-                            <option>Bearer Token</option>
-                            <option>Basic Auth</option>
-                            <option>API Key</option>
-                          </select>
-                        </div>
-                        <div className='text-gray-500 text-sm'>Configure authentication for this route</div>
-                      </div>
-                    )}
-                    
-                    {activeTab === 'headers' && (
-                      <div className='space-y-4'>
-                        <div>
-                          <label className='block text-sm font-medium text-gray-400 mb-2'>Request Headers</label>
-                          <div className='bg-black p-3 rounded text-sm'>
-                            <div className='space-y-2'>
-                              <div className='flex items-center space-x-2'>
-                                <input 
-                                  type='text' 
-                                  placeholder='Header name' 
-                                  className='flex-1 border border-gray-500 rounded px-2 py-1 text-xs' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
-                                />
-                                <input 
-                                  type='text' 
-                                  placeholder='Header value' 
-                                  className='flex-1 border border-gray-500 rounded px-2 py-1 text-xs' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
-                                />
-                                <button className='text-red-400 hover:text-red-300 text-xs px-2'>
-                                  <i className='fas fa-trash' />
-                                </button>
-                              </div>
-                              <button className='text-blue-400 hover:text-blue-300 text-xs'>
-                                <i className='fas fa-plus mr-1' />
-                                Add Header
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {activeTab === 'body' && (
-                      <div className='space-y-4'>
-                        <div>
-                          <label className='block text-sm font-medium text-gray-400 mb-2'>Request Body</label>
-                          <div className='space-y-2'>
-                            <select className='w-full border border-gray-500 rounded px-3 py-2 text-sm' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}>
-                              <option>JSON</option>
-                              <option>Form Data</option>
-                              <option>Raw Text</option>
-                              <option>None</option>
-                            </select>
-                            <textarea 
-                              className='w-full border border-gray-500 rounded px-3 py-2 text-sm font-mono h-40'
-                              style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
-                              placeholder='Enter request body...'
-                            />
-                          </div>
-                        </div>
-                        {selectedRoute.response_body && (
-                          <div>
-                            <label className='block text-sm font-medium text-gray-400 mb-2'>Response Body</label>
-                            <pre className='bg-black p-3 rounded overflow-x-auto text-sm'>{selectedRoute.response_body}</pre>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           ) : (
