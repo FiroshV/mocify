@@ -46,7 +46,7 @@ const TestHistoryModal = ({ show, testHistory, onClose, onClear }) => {
             placeholder='Filter by route name, method, or path...'
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
-            className='w-full p-2 bg-gray-700 rounded'
+            className='w-full p-2 rounded border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
           />
         </div>
 

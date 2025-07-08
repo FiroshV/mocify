@@ -107,7 +107,7 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
                   type='text'
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className='w-full p-2 bg-gray-700 rounded'
+                  className='w-full p-2 rounded border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
                   required
                 />
               </div>
@@ -116,7 +116,7 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
                 <select
                   value={method}
                   onChange={(e) => setMethod(e.target.value)}
-                  className='w-full p-2 bg-gray-700 rounded'
+                  className='w-full p-2 rounded border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
                 >
                   <option value='GET'>GET</option>
                   <option value='POST'>POST</option>
@@ -130,7 +130,7 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
                   type='text'
                   value={path}
                   onChange={(e) => setPath(e.target.value)}
-                  className='w-full p-2 bg-gray-700 rounded'
+                  className='w-full p-2 rounded border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
                   placeholder='/api/endpoint'
                   required
                 />
@@ -141,7 +141,7 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
                   type='number'
                   value={statusCode}
                   onChange={(e) => setStatusCode(Number(e.target.value))}
-                  className='w-full p-2 bg-gray-700 rounded'
+                  className='w-full p-2 rounded border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
                   required
                 />
               </div>
@@ -150,7 +150,7 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
                 <textarea
                   value={responseBody}
                   onChange={(e) => setResponseBody(e.target.value)}
-                  className='w-full p-2 bg-gray-700 rounded'
+                  className='w-full p-2 rounded border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
                   rows={6}
                   placeholder='{"message": "Hello World"}'
                 />
@@ -179,21 +179,21 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
                       placeholder='Key'
                       value={param.key}
                       onChange={(e) => updateParam(index, 'key', e.target.value)}
-                      className='p-2 bg-gray-700 rounded text-sm'
+                      className='p-2 rounded text-sm border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
                     />
                     <input
                       type='text'
                       placeholder='Value'
                       value={param.value}
                       onChange={(e) => updateParam(index, 'value', e.target.value)}
-                      className='p-2 bg-gray-700 rounded text-sm'
+                      className='p-2 rounded text-sm border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
                     />
                     <input
                       type='text'
                       placeholder='Description'
                       value={param.description}
                       onChange={(e) => updateParam(index, 'description', e.target.value)}
-                      className='p-2 bg-gray-700 rounded text-sm'
+                      className='p-2 rounded text-sm border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
                     />
                     <button
                       type='button'
@@ -229,13 +229,13 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
               <div className='space-y-2'>
                 {Object.entries(responseHeaders).map(([key, value]) => (
                   <div key={key} className='grid grid-cols-3 gap-2 items-center'>
-                    <div className='p-2 bg-gray-900 rounded text-sm font-mono'>{key}</div>
+                    <div className='p-2 bg-black rounded text-sm font-mono'>{key}</div>
                     <input
                       type='text'
                       placeholder='Value'
                       value={value}
                       onChange={(e) => updateHeader(key, e.target.value)}
-                      className='p-2 bg-gray-700 rounded text-sm'
+                      className='p-2 rounded text-sm border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
                     />
                     <button
                       type='button'
@@ -264,7 +264,7 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
                 <select
                   value={authType}
                   onChange={(e) => setAuthType(e.target.value)}
-                  className='w-full p-2 bg-gray-700 rounded'
+                  className='w-full p-2 rounded border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
                   disabled
                 >
                   <option value='none'>No Auth</option>

@@ -27,7 +27,7 @@ const NewCollectionModal = ({ show, onClose, onSave }) => {
               type='text'
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className='w-full p-2 bg-gray-700 rounded'
+              className='w-full p-2 rounded border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
               required
             />
           </div>
@@ -36,7 +36,7 @@ const NewCollectionModal = ({ show, onClose, onSave }) => {
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className='w-full p-2 bg-gray-700 rounded'
+              className='w-full p-2 rounded border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
               rows={3}
             />
           </div>
@@ -46,7 +46,7 @@ const NewCollectionModal = ({ show, onClose, onSave }) => {
               type='number'
               value={port}
               onChange={(e) => setPort(Number(e.target.value))}
-              className='w-full p-2 bg-gray-700 rounded'
+              className='w-full p-2 rounded border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
               required
             />
           </div>

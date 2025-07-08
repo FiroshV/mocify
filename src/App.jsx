@@ -119,9 +119,9 @@ function App() {
   };
 
   return (
-    <div className='flex h-screen bg-gray-900 text-gray-100'>
+    <div className='flex h-screen bg-black text-gray-100'>
       {/* Sidebar */}
-      <div className='w-80 bg-gray-800 border-r border-gray-700 overflow-y-auto'>
+      <div className='w-80 bg-black border-r border-gray-600 overflow-y-auto'>
         <div className='p-4'>
           <h1 className='text-2xl font-bold mb-6 text-blue-400'>
             <i className='fas fa-server mr-2' />
@@ -145,7 +145,7 @@ function App() {
               <div
                 key={collection.id}
                 className={`py-2 px-3 rounded mb-2 transition ${
-                  selectedCollection?.id === collection.id ? 'bg-gray-700' : 'hover:bg-gray-700'
+                  selectedCollection?.id === collection.id ? 'bg-gray-800' : 'hover:bg-gray-800'
                 }`}
               >
                 <div 
@@ -193,7 +193,7 @@ function App() {
       {/* Main Content */}
       <div className='flex-1 flex'>
         {/* Routes List */}
-        <div className='w-96 bg-gray-800 border-r border-gray-700 overflow-y-auto'>
+        <div className='w-96 bg-black border-r border-gray-600 overflow-y-auto'>
           {selectedCollection ? (
             <div className='p-4'>
               <div className='flex items-center justify-between mb-4'>
@@ -229,7 +229,7 @@ function App() {
                 <div
                   key={route.id}
                   className={`py-2 px-3 rounded mb-2 transition ${
-                    selectedRoute?.id === route.id ? 'bg-gray-700' : 'hover:bg-gray-700'
+                    selectedRoute?.id === route.id ? 'bg-gray-800' : 'hover:bg-gray-800'
                   }`}
                 >
                   <div 
@@ -283,9 +283,9 @@ function App() {
               ))}
             </div>
           ) : (
-            <div className='flex items-center justify-center h-full text-gray-500'>
+            <div className='flex items-center justify-center h-full text-gray-400'>
               <div className='text-center'>
-                <i className='fas fa-folder-open text-4xl mb-2' />
+                <i className='fas fa-folder-open text-4xl mb-2 text-gray-500' />
                 <p>Select a collection</p>
               </div>
             </div>
@@ -293,7 +293,7 @@ function App() {
         </div>
 
         {/* Route Details */}
-        <div className='flex-1 bg-gray-800 overflow-y-auto'>
+        <div className='flex-1 bg-black overflow-y-auto'>
           {selectedRoute ? (
             <div className='p-6'>
               <div className='flex items-center justify-between mb-6'>
@@ -329,14 +329,14 @@ function App() {
                     <span className='ml-2 text-xs text-gray-500'>({currentTestResults.filter(result => result.routeId === selectedRoute.id).length})</span>
                   </div>
                   {showTestResults && (
-                    <div className='bg-gray-800 rounded border border-gray-700 max-h-60 overflow-y-auto'>
+                    <div className='bg-black rounded border border-gray-600 max-h-60 overflow-y-auto'>
                       {currentTestResults.filter(result => result.routeId === selectedRoute.id).slice(0, 5).map(result => (
                         <div
                           key={result.id}
-                          className={`border-b border-gray-700 last:border-b-0 ${result.success ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500'}`}
+                          className={`border-b border-gray-600 last:border-b-0 ${result.success ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500'}`}
                         >
                           <div 
-                            className='p-3 cursor-pointer hover:bg-gray-750 transition'
+                            className='p-3 cursor-pointer hover:bg-gray-800 transition'
                             onClick={() => setExpandedResults(prev => ({
                               ...prev,
                               [result.id]: !prev[result.id]
@@ -365,7 +365,7 @@ function App() {
                                   </span>
                                 )}
                                 {result.response_time_ms && (
-                                  <span className='text-xs text-gray-400 bg-gray-700 px-2 py-1 rounded'>
+                                  <span className='text-xs text-gray-400 bg-gray-800 px-2 py-1 rounded'>
                                     {result.response_time_ms}ms
                                   </span>
                                 )}
@@ -374,11 +374,11 @@ function App() {
                             {result.error && <div className='text-xs text-red-400 mt-1'>{result.error}</div>}
                           </div>
                           {expandedResults[result.id] && (
-                            <div className='px-3 pb-3 border-t border-gray-700 bg-gray-750'>
+                            <div className='px-3 pb-3 border-t border-gray-600 bg-gray-800'>
                               <div className='space-y-3 mt-3'>
                                 <div>
                                   <div className='text-xs font-medium text-gray-400 mb-1'>Request</div>
-                                  <div className='bg-gray-900 p-2 rounded text-xs font-mono'>
+                                  <div className='bg-gray-800 p-2 rounded text-xs font-mono'>
                                     <div>
                                       <span className={`font-bold ${
                                         result.method === 'GET' ? 'text-green-400' :
@@ -395,7 +395,7 @@ function App() {
                                 {result.success && (
                                   <div>
                                     <div className='text-xs font-medium text-gray-400 mb-1'>Response Headers</div>
-                                    <div className='bg-gray-900 p-2 rounded text-xs font-mono max-h-32 overflow-y-auto'>
+                                    <div className='bg-gray-800 p-2 rounded text-xs font-mono max-h-32 overflow-y-auto'>
                                       {result.response_headers ? Object.entries(result.response_headers).map(([key, value]) => (
                                         <div key={key}>
                                           <span className='text-blue-400'>{key}: </span>
@@ -408,7 +408,7 @@ function App() {
                                 {result.response_body && (
                                   <div>
                                     <div className='text-xs font-medium text-gray-400 mb-1'>Response Body</div>
-                                    <pre className='bg-gray-900 p-2 rounded text-xs font-mono max-h-32 overflow-y-auto'>{result.response_body}</pre>
+                                    <pre className='bg-gray-800 p-2 rounded text-xs font-mono max-h-32 overflow-y-auto'>{result.response_body}</pre>
                                   </div>
                                 )}
                               </div>
@@ -423,7 +423,7 @@ function App() {
               <div className='space-y-6'>
                 <div>
                   <label className='block text-sm font-medium text-gray-400 mb-2'>Endpoint</label>
-                  <div className='bg-gray-800 p-3 rounded font-mono text-sm'>
+                  <div className='bg-black p-3 rounded font-mono text-sm'>
                     <span className={`font-bold mr-2 ${
                       selectedRoute.method === 'GET' ? 'text-green-400' :
                       selectedRoute.method === 'POST' ? 'text-blue-400' :
@@ -437,7 +437,7 @@ function App() {
                 </div>
                 <div>
                   <label className='block text-sm font-medium text-gray-400 mb-2'>Status Code</label>
-                  <div className='bg-gray-800 p-3 rounded'>
+                  <div className='bg-black p-3 rounded'>
                     <span className={`font-bold ${
                       selectedRoute.status_code >= 200 && selectedRoute.status_code < 300 ? 'text-green-400' :
                       selectedRoute.status_code >= 400 ? 'text-red-400' : 'text-yellow-400'
@@ -449,7 +449,7 @@ function App() {
                 
                 {/* Tabs */}
                 <div>
-                  <div className='border-b border-gray-700 mb-4'>
+                  <div className='border-b border-gray-600 mb-4'>
                     <nav className='flex space-x-8'>
                       {['params', 'authorization', 'headers', 'body'].map(tab => (
                         <button
@@ -473,18 +473,18 @@ function App() {
                       <div className='space-y-4'>
                         <div>
                           <label className='block text-sm font-medium text-gray-400 mb-2'>Query Parameters</label>
-                          <div className='bg-gray-800 p-3 rounded text-sm'>
+                          <div className='bg-black p-3 rounded text-sm'>
                             <div className='space-y-2'>
                               <div className='flex items-center space-x-2'>
                                 <input 
                                   type='text' 
                                   placeholder='Parameter name' 
-                                  className='flex-1 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs'
+                                  className='flex-1 border border-gray-500 rounded px-2 py-1 text-xs' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
                                 />
                                 <input 
                                   type='text' 
                                   placeholder='Parameter value' 
-                                  className='flex-1 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs'
+                                  className='flex-1 border border-gray-500 rounded px-2 py-1 text-xs' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
                                 />
                                 <button className='text-red-400 hover:text-red-300 text-xs px-2'>
                                   <i className='fas fa-trash' />
@@ -499,18 +499,18 @@ function App() {
                         </div>
                         <div>
                           <label className='block text-sm font-medium text-gray-400 mb-2'>Path Parameters</label>
-                          <div className='bg-gray-800 p-3 rounded text-sm'>
+                          <div className='bg-black p-3 rounded text-sm'>
                             <div className='space-y-2'>
                               <div className='flex items-center space-x-2'>
                                 <input 
                                   type='text' 
                                   placeholder='Parameter name' 
-                                  className='flex-1 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs'
+                                  className='flex-1 border border-gray-500 rounded px-2 py-1 text-xs' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
                                 />
                                 <input 
                                   type='text' 
                                   placeholder='Parameter value' 
-                                  className='flex-1 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs'
+                                  className='flex-1 border border-gray-500 rounded px-2 py-1 text-xs' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
                                 />
                                 <button className='text-red-400 hover:text-red-300 text-xs px-2'>
                                   <i className='fas fa-trash' />
@@ -530,7 +530,7 @@ function App() {
                       <div className='space-y-4'>
                         <div>
                           <label className='block text-sm font-medium text-gray-400 mb-2'>Authorization Type</label>
-                          <select className='w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-sm'>
+                          <select className='w-full border border-gray-500 rounded px-3 py-2 text-sm' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}>
                             <option>No Auth</option>
                             <option>Bearer Token</option>
                             <option>Basic Auth</option>
@@ -545,18 +545,18 @@ function App() {
                       <div className='space-y-4'>
                         <div>
                           <label className='block text-sm font-medium text-gray-400 mb-2'>Request Headers</label>
-                          <div className='bg-gray-800 p-3 rounded text-sm'>
+                          <div className='bg-black p-3 rounded text-sm'>
                             <div className='space-y-2'>
                               <div className='flex items-center space-x-2'>
                                 <input 
                                   type='text' 
                                   placeholder='Header name' 
-                                  className='flex-1 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs'
+                                  className='flex-1 border border-gray-500 rounded px-2 py-1 text-xs' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
                                 />
                                 <input 
                                   type='text' 
                                   placeholder='Header value' 
-                                  className='flex-1 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs'
+                                  className='flex-1 border border-gray-500 rounded px-2 py-1 text-xs' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
                                 />
                                 <button className='text-red-400 hover:text-red-300 text-xs px-2'>
                                   <i className='fas fa-trash' />
@@ -577,14 +577,15 @@ function App() {
                         <div>
                           <label className='block text-sm font-medium text-gray-400 mb-2'>Request Body</label>
                           <div className='space-y-2'>
-                            <select className='w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-sm'>
+                            <select className='w-full border border-gray-500 rounded px-3 py-2 text-sm' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}>
                               <option>JSON</option>
                               <option>Form Data</option>
                               <option>Raw Text</option>
                               <option>None</option>
                             </select>
                             <textarea 
-                              className='w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-sm font-mono h-40'
+                              className='w-full border border-gray-500 rounded px-3 py-2 text-sm font-mono h-40'
+                              style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
                               placeholder='Enter request body...'
                             />
                           </div>
@@ -592,7 +593,7 @@ function App() {
                         {selectedRoute.response_body && (
                           <div>
                             <label className='block text-sm font-medium text-gray-400 mb-2'>Response Body</label>
-                            <pre className='bg-gray-800 p-3 rounded overflow-x-auto text-sm'>{selectedRoute.response_body}</pre>
+                            <pre className='bg-black p-3 rounded overflow-x-auto text-sm'>{selectedRoute.response_body}</pre>
                           </div>
                         )}
                       </div>
@@ -602,9 +603,9 @@ function App() {
               </div>
             </div>
           ) : (
-            <div className='flex items-center justify-center h-full text-gray-500'>
+            <div className='flex items-center justify-center h-full text-gray-400'>
               <div className='text-center'>
-                <i className='fas fa-route text-4xl mb-2' />
+                <i className='fas fa-route text-4xl mb-2 text-gray-500' />
                 <p>Select a route</p>
               </div>
             </div>
