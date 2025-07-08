@@ -16,7 +16,7 @@ const NewRouteModal = ({ show, onClose, onSave }) => {
       path, 
       status_code: statusCode, 
       response_body: responseBody,
-      delay: delay
+      delay_ms: delay
     });
     setName("");
     setMethod("GET");

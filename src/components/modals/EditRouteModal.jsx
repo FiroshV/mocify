@@ -6,7 +6,7 @@ const EditRouteModal = ({ show, route, onClose, onSave }) => {
   const [path, setPath] = useState(route?.path || "");
   const [statusCode, setStatusCode] = useState(route?.status_code || 200);
   const [responseBody, setResponseBody] = useState(route?.response_body || "");
-  const [delay, setDelay] = useState(route?.delay || 0);
+  const [delay, setDelay] = useState(route?.delay_ms || 0);
 
   useEffect(() => {
     if (route) {
@@ -15,7 +15,7 @@ const EditRouteModal = ({ show, route, onClose, onSave }) => {
       setPath(route.path || "");
       setStatusCode(route.status_code || 200);
       setResponseBody(route.response_body || "");
-      setDelay(route.delay || 0);
+      setDelay(route.delay_ms || 0);
     }
   }, [route]);
 
@@ -28,7 +28,7 @@ const EditRouteModal = ({ show, route, onClose, onSave }) => {
       path, 
       status_code: statusCode, 
       response_body: responseBody,
-      delay: delay
+      delay_ms: delay
     });
   };
 
@@ -36,13 +36,13 @@ const EditRouteModal = ({ show, route, onClose, onSave }) => {
 
   return (
     <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
-      <div className='bg-gray-800 p-6 rounded-lg w-96'>
+      <div className='bg-gray-800 p-6 rounded-lg w-[600px] max-h-[90vh] overflow-y-auto'>
         <h3 className='text-lg font-semibold mb-4'>Edit Route</h3>
 
         <form onSubmit={handleSubmit}>
-          <div className='space-y-4'>
+          <div className='grid grid-cols-2 gap-4 mb-4'>
             <div>
-              <label className='block text-sm font-medium mb-2'>Name</label>
+              <label className='block text-sm font-medium mb-1'>Name</label>
               <input
                 type='text'
                 value={name}
@@ -52,7 +52,7 @@ const EditRouteModal = ({ show, route, onClose, onSave }) => {
               />
             </div>
             <div>
-              <label className='block text-sm font-medium mb-2'>Method</label>
+              <label className='block text-sm font-medium mb-1'>Method</label>
               <select
                 value={method}
                 onChange={(e) => setMethod(e.target.value)}
@@ -65,7 +65,7 @@ const EditRouteModal = ({ show, route, onClose, onSave }) => {
               </select>
             </div>
             <div>
-              <label className='block text-sm font-medium mb-2'>Path</label>
+              <label className='block text-sm font-medium mb-1'>Path</label>
               <input
                 type='text'
                 value={path}
@@ -76,7 +76,7 @@ const EditRouteModal = ({ show, route, onClose, onSave }) => {
               />
             </div>
             <div>
-              <label className='block text-sm font-medium mb-2'>Status Code</label>
+              <label className='block text-sm font-medium mb-1'>Status Code</label>
               <input
                 type='number'
                 value={statusCode}
@@ -85,9 +85,9 @@ const EditRouteModal = ({ show, route, onClose, onSave }) => {
                 required
               />
             </div>
-            <div>
-              <label className='block text-sm font-medium mb-2'>
-                Response Delay (milliseconds)
+            <div className='col-span-2'>
+              <label className='block text-sm font-medium mb-1'>
+                Response Delay (ms)
                 <span className='text-gray-500 text-xs ml-1'>(optional)</span>
               </label>
               <input
@@ -98,20 +98,17 @@ const EditRouteModal = ({ show, route, onClose, onSave }) => {
                 min='0'
                 placeholder='0'
               />
-              <p className='text-xs text-gray-500 mt-1'>
-                Add artificial delay to simulate slower responses (0 = no delay)
-              </p>
             </div>
-            <div>
-              <label className='block text-sm font-medium mb-2'>Response Body</label>
-              <textarea
-                value={responseBody}
-                onChange={(e) => setResponseBody(e.target.value)}
-                className='w-full p-2 rounded border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
-                rows={6}
-                placeholder='{"message": "Hello World"}'
-              />
-            </div>
+          </div>
+          <div className='mb-4'>
+            <label className='block text-sm font-medium mb-1'>Response Body</label>
+            <textarea
+              value={responseBody}
+              onChange={(e) => setResponseBody(e.target.value)}
+              className='w-full p-2 rounded border border-gray-500' style={{backgroundColor: '#0d0d0d', color: '#e2e2e2'}}
+              rows={4}
+              placeholder='{"message": "Hello World"}'
+            />
           </div>
 
           <div className='flex justify-end space-x-2 mt-6 pt-4 border-t border-gray-600'>
